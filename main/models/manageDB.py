@@ -3,6 +3,7 @@ from sqlalchemy.orm import sessionmaker
 from .base import Model
 from .access import Profile, ProfileAssignment, View, ViewAssignment
 from .jobs import JobListing, JobApplication
+from .services import DailyStatus, Vacation
 from .accounts import Account, Project, ProjectAssignment
 from .users import User, Employee, External, Candidate
 

@@ -6,7 +6,7 @@ class JobListing(base.Model):
     __tablename__ = 'jobListing'
     id = Column(Integer, primary_key=True)
     job_name = Column(String, nullable=False, index=True)
-    job_description = Column(String)
+    job_descr = Column(String)
     job_exp = Column(String)
     job_type = Column(String)
     job_status = Column(String(10))
