@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row" style="min-height:100vh">
+    <div class="col border-end border-3"> 
+      <div className="login-wrapper">
+        <form action = "http://localhost:5000/login/submit" method="POST" autocomplete="off">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" aria-describedby="usernameHelp" placeholder="">
+                <small id="usernameHelp" class="form-text text-muted"></small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" aria-describedby="passwordHelp" placeholder="jdean@example.com">
+                <small id="passwordHelp" class="form-text text-muted"></small>
+            </div>
+        
+            <button type="submit" class="btn btn-primary">Submit</button>
+        
+        </form>
+      </div>
+    </div>
+    <div class="col-sm-4" style="background-color:#f5f8fe">      
+      <a href="/jobs">Start Career</a>
+    </div>
+  </div>
+</div>
+{% endblock content %}

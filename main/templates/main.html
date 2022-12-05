@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>HRS</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+</head>
+<body>
+	<div class="container-fluid">
+        <div class="row" style="min-height:100vh">
+			{% if hasSidebar %}			
+			<div class="col-sm-2 border-end border-2" style="background-color:#ffffff;min-width:320px"> 
+				{% include 'sidebar.html' %}
+			</div>
+			{% endif %}			
+			<div class="col" style="background-color:#f5f8fe">      
+				{% block content %}
+				{% endblock content %}
+			</div>
+        </div> 
+    </div>
+</body>
+</html>
