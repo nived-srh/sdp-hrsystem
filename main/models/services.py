@@ -7,11 +7,11 @@ class DailyStatus(base.Model):
     id = Column(Integer, primary_key=True)
     status_descr = Column(String, nullable=False, index=True)
     project_id = Column(Integer, ForeignKey("project.id"))
-    employee_id = Column(Integer, ForeignKey("user.id"))
+    employee_id = Column(Integer, ForeignKey("employee.id"))
 
 class Vacation(base.Model):
     __tablename__ = 'vacation'
     id = Column(Integer, primary_key=True)
     vac_type = Column(String, nullable=False, index=True)
     vac_comment = Column(String)
-    user_id = Column(Integer, ForeignKey("user.id"))
+    employee_id = Column(Integer, ForeignKey("employee.id"))

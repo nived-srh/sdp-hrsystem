@@ -1,5 +1,38 @@
 {% extends "main.html" %}
 
 {% block content %}
-    Jobs
+<h1 class="mb-4">Jobs</h1>
+
+<table class="table table-sm table-hover table-bordered shadow-sm">
+  <thead>
+    <tr >
+      <th class="p-2 bg-white" scope="col" colspan="4">Job Listings</th>
+    </tr>
+    <tr style="background-color:#D6EAF8">
+      <th scope="col">#</th>
+      <th scope="col">First</th>
+      <th scope="col">Last</th>
+      <th scope="col">Handle</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">1</th>
+      <td>Mark</td>
+      <td>Otto</td>
+      <td>@mdo</td>
+    </tr>
+    <tr>
+      <th scope="row">2</th>
+      <td>Jacob</td>
+      <td>Thornton</td>
+      <td>@fat</td>
+    </tr>
+    <tr>
+      <th scope="row">3</th>
+      <td colspan="2">Larry the Bird</td>
+      <td>@twitter</td>
+    </tr>
+  </tbody>
+</table>
 {% endblock content %}

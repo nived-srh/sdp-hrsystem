@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-from models.manageDB import createDB, dropDB
+from .models.manageDB import createDB, dropDB
 
 class DatabaseConnect():
     dbURI = ""

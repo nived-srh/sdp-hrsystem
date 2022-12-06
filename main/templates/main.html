@@ -5,6 +5,7 @@
 	<title>HRS</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+	<script src="https://kit.fontawesome.com/ee35f341e4.js" crossorigin="anonymous"></script>
 </head>
 <body>
 	<div class="container-fluid">
@@ -14,7 +15,7 @@
 				{% include 'sidebar.html' %}
 			</div>
 			{% endif %}			
-			<div class="col" style="background-color:#f5f8fe">      
+			<div class="col pl-4 pr-4" style="background-color:#f5f8fe">      
 				{% block content %}
 				{% endblock content %}
 			</div>

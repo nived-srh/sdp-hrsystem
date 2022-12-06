@@ -5,7 +5,7 @@ from .access import Profile, ProfileAssignment, View, ViewAssignment
 from .jobs import JobListing, JobApplication
 from .services import DailyStatus, Vacation
 from .accounts import Account, Project, ProjectAssignment
-from .users import User, Employee, External, Candidate
+from .users import Person, Employee, External, Candidate
 
 def createDB(dbURL):
     engine = create_engine(dbURL, echo=True)

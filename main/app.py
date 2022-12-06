@@ -1,8 +1,8 @@
 from flask import Flask, request, session, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
-from config import AppConfig
-from database import DatabaseConnect
-from models import *
+from .config import AppConfig
+from .database import DatabaseConnect
+from .models import *
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -14,51 +14,22 @@ db = None
 def home():
     if 'userSession' not in session:        
         return redirect(url_for('login'))
-    return render_template("base.html", hasSidebar=False)
+    return render_template("base.html", hasSidebar=True)
 
-@app.route("/login")
+@app.route("/login", methods=['GET','POST'])
 def login():
+    if request.method == 'POST':
+        global db
+        if db == None:
+            db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+        
+        result = users.Person().validateUser(db, request.form['username'], request.form['password'] )
+
+        if result != None:
+            session['userSession'] = result.email
+            return redirect(url_for('home'))
+
     return render_template("login.html")
-
-@app.route("/login/submit", methods=['POST'])
-def loginSubmit():
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    result = users.User().validateUser(db, request.form['username'], request.form['password'] )
-
-    if result != None:
-        session['userSession'] = result.email
-        return redirect(url_for('home'))
-
-@app.route("/jobs")
-def jobs():
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    return render_template("jobs.html", hasSidebar=True, views="TestView")
-
-@app.route("/logins", methods=['POST'])
-def logins():
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    result = users.User().validateUser(db, request.json['username'], request.json['password'] )
-
-    if result != None:
-        session['userSession'] = result.email
-        return jsonify({
-            "id": result.id,
-            "username": result.email,          
-        })
-    else:
-        return jsonify({
-             "error" : "UNAUTHORIZED",
-             "errorDetail" : result
-        }), 401
 
 @app.route('/logout')
 def logout():
@@ -70,6 +41,7 @@ def logout():
     finally:         
         return redirect(url_for('login'))
 
+'''
 @app.route("/validateSession", methods=['POST'])
 def validateSession():
     if 'userSession' in session:
@@ -82,6 +54,7 @@ def getSession():
     if 'userSession' in session:
         return jsonify({"userSession" : session['userSession']})
     return 'NO_SESSION_FOUND', 404
+'''
 
 @app.route("/createUser", methods=['POST'])
 def createUser():
@@ -89,7 +62,7 @@ def createUser():
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
     
-    userId = users.User().insertUser(db, request.json["username"],request.json["password"])
+    userId = users.Person().insertUser(db, request.json["username"],request.json["password"])
 
     '''
     if userId != None:
@@ -103,9 +76,9 @@ def fetchUsers():
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
     if request.args.getlist('username') != None:
-        results = users.User().fetchUsers(db, request.args.getlist('username'))
+        results = users.Person().fetchUsers(db, request.args.getlist('username'))
     else:        
-        results = users.User().fetchUsers(db)
+        results = users.Person().fetchUsers(db)
     
     if results != None:
         return jsonify({
@@ -118,6 +91,14 @@ def fetchUsers():
              "error" : "UNAUTHORIZED",
              "errorDetail" : results
         }), 401
+
+@app.route("/jobs")
+def jobs():
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    return render_template("jobs.html", hasSidebar=True, views=["Home","Logout"])
 
 @app.errorhandler(404)
 def page_not_found(e):

@@ -1,3 +1,4 @@
 SDP-PROJECT.code-workspace
 .env
 __pycache__/
+requirements-temp.txt

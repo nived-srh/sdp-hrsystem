@@ -6,22 +6,24 @@ class Profile(base.Model):
     __tablename__ = 'profile'
     id = Column(Integer, primary_key=True)
     profile_name = Column(String, nullable=False, index=True)
-    children = relationship("ProfileAssignment", back_populates="Profile")
+    children = relationship("ProfileAssignment", back_populates="profile")
 
 class ProfileAssignment(base.Model):
     __tablename__ = 'profileAssignment'
     id = Column(Integer, primary_key=True)
     profile_id = Column(Integer, ForeignKey("profile.id"))
-    user_id = Column(Integer, ForeignKey("user.id"))
+    person_id = Column(Integer, ForeignKey("person.id"))
+    profile = relationship("Profile", back_populates="children")
 
 class View(base.Model):
     __tablename__ = 'view'
     id = Column(Integer, primary_key=True)
     view_name = Column(String, nullable=False, index=True) 
-    children = relationship("ViewAssignment", back_populates="View")
+    children = relationship("ViewAssignment", back_populates="view")
 
 class ViewAssignment(base.Model):
     __tablename__ = 'viewAssignment'
     id = Column(Integer, primary_key=True)
     view_id = Column(Integer, ForeignKey("view.id"))
     profile_id = Column(Integer, ForeignKey("profile.id"))
+    view = relationship("View", back_populates="children")
