@@ -23,8 +23,8 @@ def login():
         if db == None:
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
         
-        result = users.Person().validateUser(db, request.form['username'], request.form['password'] )
-
+        result = users.Person().validatePerson(db, request.form['username'], request.form['password'] )
+        
         if result != None:
             session['userSession'] = result.email
             return redirect(url_for('home'))
@@ -41,34 +41,23 @@ def logout():
     finally:         
         return redirect(url_for('login'))
 
-'''
-@app.route("/validateSession", methods=['POST'])
-def validateSession():
-    if 'userSession' in session:
-        if session['userSession'] == request.json['usersession']:
-            return "AUTHORIZED", 200
-    return "UNAUTHORIZED", 401
- 
-@app.route("/getSession", methods=['GET'])
-def getSession():
-    if 'userSession' in session:
-        return jsonify({"userSession" : session['userSession']})
-    return 'NO_SESSION_FOUND', 404
-'''
-
 @app.route("/createUser", methods=['POST'])
 def createUser():
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
     
-    userId = users.Person().insertUser(db, request.json["username"],request.json["password"])
+    response = users.Person().createPersonForm(db, request.form)
 
     '''
     if userId != None:
         session['usersession'] = request.json["username"]
     '''
-    return userId
+    #return render_template("jobs.html", hasSidebar=True, views=[ userId ,"Logout"])
+
+    return jsonify({
+        "results " : response
+    })
     
 @app.route("/fetchUsers", methods=['GET'])
 def fetchUsers():
@@ -100,6 +89,53 @@ def jobs():
     
     return render_template("jobs.html", hasSidebar=True, views=["Home","Logout"])
 
+@app.route("/emp/<action>", defaults={'key': None})
+@app.route("/emp/<action>/<key>")
+def emp(action,key):
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    return jsonify({
+        "results " : action + '' +  (key if key != None else "noo")
+    })
+
+@app.route("/employee")
+def employee():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    return render_template("employees.html", hasSidebar=True, views=["Home","Logout"])
+
+@app.route("/createDatabase")
+def createDB():
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    try:
+        results = db.createDatabase()
+    except Exception as err:
+        print(err)
+        return jsonify({ "error": "error" })
+    return jsonify({ "result": [ item for item in results] })
+
+@app.route("/dropDatabase")
+def dropDB():
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    try:
+        db.dropDatabase()
+    except Exception as err:
+        print(err)
+        return jsonify({ "error": "error" })
+    return jsonify({ "result": "SUCCESS" })
+
 @app.errorhandler(404)
 def page_not_found(e):
     # note that we set the 404 status explicitly
@@ -107,3 +143,18 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+'''
+@app.route("/validateSession", methods=['POST'])
+def validateSession():
+    if 'userSession' in session:
+        if session['userSession'] == request.json['usersession']:
+            return "AUTHORIZED", 200
+    return "UNAUTHORIZED", 401
+ 
+@app.route("/getSession", methods=['GET'])
+def getSession():
+    if 'userSession' in session:
+        return jsonify({"userSession" : session['userSession']})
+    return 'NO_SESSION_FOUND', 404
+'''

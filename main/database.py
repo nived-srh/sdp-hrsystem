@@ -22,41 +22,53 @@ class DatabaseConnect():
             self.conn = self.engine.connect()
         return self.conn
 
-    def initiateSession(self):        
-        if self.engine == None:
-            Session = sessionmaker(bind=self.initiateEngine())
-        else:
-            Session = sessionmaker(bind=self.engine)
-        
-        self.session = Session()
+    def initiateSession(self):   
+        if self.session == None:     
+            if self.engine == None:
+                Session = sessionmaker(bind=self.initiateEngine())
+            else:
+                Session = sessionmaker(bind=self.engine)
+            
+            self.session = Session()
         return self.session
     
-    def commitSession(self):
-        self.commitSession(self.session)
-
-    def commitSession(self, session, autoClose = True):
-        commitStatus = "Initiated"
-        if session == None:
-            session = self.initiateSession()
-        
-        try: 
-            session.commit() 
-            commitStatus = "Success"
-        except Exception as err:
-            print("Rollback Error", err)
-            session.rollback()
-            commitStatus = err
-        finally: 
-            if autoClose:
-                self.closeSession(session)  
-        return commitStatus          
-
     def closeSession(self, session):
         if self.session == session:
             session.close()
             self.session = None
         else:
             session.close()
+
+    def commitSession(self):
+        self.commitSession(self.session)
+
+    def commitSession(self, session, autoClose = True):
+        commitStatus = "INITIATED"
+        if session == None:
+            session = self.initiateSession()        
+        try: 
+            session.commit() 
+            commitStatus = "SUCCESS"
+        except Exception as err:
+            session.rollback()
+            commitStatus = "ROLLBACK_" + err
+        finally: 
+            if autoClose:
+                self.closeSession(session)  
+        return commitStatus          
+
+    def fetchData(self, queryTable, queryColumns, queryParams, queryLimit):        
+        if queryTable != None:
+            sql = "SELECT " + (queryColumns if queryColumns != None else "*" ) + ' FROM ' + queryTable
+            if queryParams != None:
+                sql += " WHERE " + queryParams
+            if queryLimit!= None:
+                sql += " LIMIT " + queryLimit
+            #return sql
+            results = self.executeQuery(sql)
+            return results        
+        else:
+            return "{ \"error\": \"TABLE_NOT_SPECIFIED\" }" 
 
     def executeQuery(self, sql, autoClose = True):        
         if self.session == None:
@@ -73,10 +85,10 @@ class DatabaseConnect():
             
     def createDatabase(self):
         print("Create DB")
-        createDB(self.dbURI)
+        return createDB(self)
 
     def dropDatabase(self):
         print("Drop DB")
-        dropDB(self.dbURI)
+        return dropDB(self)
         
         

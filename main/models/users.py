@@ -1,5 +1,5 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -11,14 +11,22 @@ class Person(base.Model):
     username = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, nullable=False)
-    __mapper_args__ = {'polymorphic_on': user_type}
+    first_name = Column(String, index=True)
+    last_name = Column(String, nullable=False, index=True)
+    __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
-    def __init__(self):
+    def __init__(self, formData = None):
         self.is_active = True
+        if formData != None:
+            self.hashed_password = generate_password_hash(formData["password"])
+            self.email = formData["email"]
+            self.username = formData["username"]
+            self.last_name = formData["last_name"]
+            self.first_name = formData["first_name"] if "first_name" in formData else None
 
-    def validateUser(self, db, username, password):
+    def validatePerson(self, db, username, password):
         try:
-            result = self.fetchUsers(db, username)
+            result = self.fetchByUsername(db, username)
             if result != None:
                 for row in result:
                     if check_password_hash(row.hashed_password,password):
@@ -28,29 +36,33 @@ class Person(base.Model):
         except Exception as err:
             return None
     
-    def fetchUsers(self, db, usernames = []):
-        session = db.initiateSession()
-        sql = 'SELECT email, hashed_password, id, is_active FROM person'
-        if usernames != [] and usernames != None:
-            if isinstance(usernames, str):
-                sql += ' WHERE email = \'' + usernames + '\'' 
-            elif isinstance(usernames, list):
-                sql += ' WHERE email IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-        results = session.execute(sql)
-        return results
+    def fetchPersons(self, db, queryFields, queryParams, queryLimit):
+        return db.fetchData('person', queryFields, queryParams, queryLimit)
 
-    def insertUser(self, db, username, password, userType = 'employee'):
+    def fetchByUsername(self, db, usernames = []):
+        if usernames != [] and usernames != None:
+            if isinstance(usernames, str):   
+                params = 'email = \'' + usernames + '\'' 
+            elif isinstance(usernames, list):
+                params = 'email IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
+        return self.fetchPersons(db, 'email, hashed_password, username', params, None) 
+
+    ''' Methods overrode by child insert methods
+    def createPersonForm(self, db, formData):
+        self.hashed_password = generate_password_hash(formData["password"])
+        self.email = formData["username"]
+        self.username = formData["username"]
+        #self.user_type = formData["user_type"]
+        self.last_name = formData["user_type"] if formData["user_type"] != None else "employee"
+        return self.createPerson(db)
+
+    def createPerson(self, db):
         existingUsers = None #self.fetchUsers(db, username)
         if existingUsers == None or existingUsers == []:
             try:
-                session = db.initiateSession()
-                self.hashed_password = generate_password_hash(password)
-                self.email = username
-                self.username = username
-                self.user_type = userType
+                session = db.initiateSession()                
                 session.add(self)
                 commitStatus = db.commitSession(session, False)
-                
                 if commitStatus != "Success":
                     return "INSERTED_USER"
                 else:
@@ -59,12 +71,40 @@ class Person(base.Model):
                 return "ERR:"
         else:
             return "DUPLICATE_USER"
+    '''        
 
 class Employee(Person):
     __mapper_args__ = {'polymorphic_identity': 'employee'}
     __tablename__ = 'employee'
-    id = Column(None, ForeignKey('person.id'), primary_key=True)
+    person_id = Column(None, ForeignKey('person.id'), primary_key=True)
+    employee_id = Column(Integer, Sequence("employee_id_seq", start=1000), primary_key=True)
     num_vacations = Column(Integer)
+
+    def __init__(self):
+        pass
+
+    def createEmployeeForm(self, db, formData):   
+        self.user_type = "employee"
+        self.num_vacations = 30
+        super(Employee, self).__init__(formData)     
+        existingUsers = self.fetchByUsername(db, self.username)
+        if existingUsers == None or list(existingUsers) == []:
+            return self.createEmployee(db)
+        else:
+            return "DUPLICATE_USER"
+
+    def createEmployee(self, db):        
+        try:
+            session = db.initiateSession()                
+            session.add(self)
+            commitStatus = db.commitSession(session, False)
+            if commitStatus == "SUCCESS":
+                return "INSERTED_EMPLOYEE"
+            else:
+                return "COMMIT_ERROR_" + commitStatus
+        except Exception as err:
+            return "ERROR"
+        
 
 class External(Person):
     __mapper_args__ = {'polymorphic_identity': 'external'}
@@ -72,10 +112,59 @@ class External(Person):
     id = Column(None, ForeignKey('person.id'), primary_key=True)
     ext_type = Column(String)
 
+    def __init__(self):
+        pass
+
+    def createExternalForm(self, db, formData):
+        self.user_type = "external"
+        self.num_vacations = 30
+        super(External, self).__init__(formData)  
+        existingUsers = self.fetchByUsername(db, self.username)
+        if existingUsers == None or list(existingUsers) == []:
+            return self.createExternal(db)
+        else:
+            return "DUPLICATE_USER"
+
+    def createExternal(self, db):
+        try:
+            session = db.initiateSession()                
+            session.add(self)
+            commitStatus = db.commitSession(session, False)
+            if commitStatus != "Success":
+                return "INSERTED_EXTERNAL"
+            else:
+                return "COMMIT_ERROR_" + commitStatus
+        except Exception as err:
+            return "ERROR"
+
 class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
     num_residents = Column(Integer)
 
+    def __init__(self):
+        pass
+
+    def createCandidateForm(self, db, formData):
+        self.user_type = "candidate"
+        self.num_vacations = 30
+        super(Candidate, self).__init__(formData) 
+        existingUsers = self.fetchByUsername(db, self.username)
+        if existingUsers == None or list(existingUsers) == []:
+            return self.createCandidate(db)
+        else:
+            return "DUPLICATE_USER"
+
+    def createCandidate(self, db):
+        try:
+            session = db.initiateSession()                
+            session.add(self)
+            commitStatus = db.commitSession(session, False)
+            if commitStatus != "SUCCESS":
+                return "INSERTED_CANDIDATE"
+            else:
+                return "COMMIT_ERROR_" + commitStatus
+        except Exception as err:
+            return "ERROR"
 

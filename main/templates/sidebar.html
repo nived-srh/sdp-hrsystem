@@ -1,25 +1,24 @@
 <div class="d-flex align-items-start flex-column bd-highlight">
-  <div class="p-4 bd-highlight" style="height:13vh;width:100%;">
-    <div class="d-flex justify-content-center">Logo</div>
+  <div class="pt-2 bd-highlight" style="height:23vh;width:100%;">
+    <div class="d-flex justify-content-center">
+      <!--<img src="{{ url_for('static', filename='images/hrs-logo-blue.png') }}" height="70px">-->
+    </div>
   </div>
-  <div class="bd-highlight pt-5" style="height:80vh;width:100%;">
-    INdex
-    <div class="d-flex align-items-start flex-column bd-highlight">
-      
-    </div>
+  <div class="bd-highlight pt-3 text-danger" style="height:70vh;width:100%;">
+
     {% for item in views %}
-    <div class="card">
-      <a href="/logout">
-        <div class="card-body">
-          {{ item }}
+    <a style="text-decoration: none;" href="/logout">
+      <div class="d-flex align-items-start flex-column bd-highlight sidebarLinks">
+        <div class="d-flex flex-row pl-5" style="width:100%;">
+          <div class="d-flex p-1">{{ item }}</div>
         </div>
-      </a>
-    </div>
+      </div>
+    </a>
     {% endfor %}
   </div>
   <div class="mt-auto bd-highlight" style="height:7vh;width:100%;">
-    <a type="button" role="button" href="/logout" class="btn btn btn-outline-primary btn-lg btn-block">
-      <i class="fa-solid fa-arrow-right-from-bracket mr-3 fa-flip-horizontal"></i></i>Logout
+    <a type="button" role="button" href="/logout" class="btn btn btn-outline-primary btn-lg btn-block" >
+      <i class="fa-solid fa-arrow-right-from-bracket mr-3 fa-flip-horizontal"></i>Logout
     </a>
   </div>
 </div>
