@@ -7,4 +7,4 @@ class AppConfig():
 
     #SESSION SECRET KEY
     SECRET_KEY = b'_5#y2L"F4Q8z\n\xec]/'
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=5)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=15)

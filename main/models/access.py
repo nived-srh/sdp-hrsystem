@@ -33,11 +33,11 @@ class Profile(base.Model):
                     session.add(pfa)
                 commitStatus = db.commitSession(session)
                 if commitStatus == "SUCCESS":
-                    return "INSERTED_PROFILEACCESS_BULK"
+                    return "INSERTED_PROFILE_WITH_ACCESS"
                 else:
                     return "ERROR_" + commitStatus
             except Exception as err:
-                return "ERR:"
+                return "ERROR_INS_PROFILE_WITH_ACCESS"
         else:
             return "DUPLICATE_PROFILEACCESS"
 
@@ -68,6 +68,7 @@ class ProfileAccess(base.Model):
     view_name = Column(String, default="default", index=True) 
     view_group = Column(String, default="default", index=True) 
     view_url = Column(String, default="/", index=True) 
+    view_label = Column(String) 
     allow_read = Column(Boolean, default=False)
     allow_create = Column(Boolean, default=False)
     allow_edit = Column(Boolean, default=False)
@@ -76,8 +77,7 @@ class ProfileAccess(base.Model):
     profile = relationship("Profile", back_populates="children")
 
     def __init__(self, profile = None, formData = None):
-        if profile!= None and formData is not None:
-            self.profile_id = profile.id
+        if profile != None and formData != None:
             self.profile = profile if profile is not None else None
             self.view_name = formData["view_name"] if "view_name" in formData else "invalid"
             self.view_group = formData["view_group"] if "view_group" in formData else None
@@ -115,7 +115,8 @@ class ProfileAccess(base.Model):
     def fetchProfileAccess(self, db, queryFields, queryParams, queryLimit):
         return db.fetchData('profileaccess', queryFields, queryParams, queryLimit)
 
-    def fetchProfileAccessByUsername(self, db, username):
+    def fetchProfileAccessByUsername(self, db, username, accessCheck = False):
         if username != None and username != '':
             queryParams = 'profileaccess.profile_id = person.user_profile AND username = \'' + username + '\''
-            return db.fetchData('profileaccess, person', 'view_name, view_group, username', queryParams, None)
+            queryFields = 'view_name, view_group, view_url, view_label, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, allow_read'
+            return db.fetchData('profileaccess, person', queryFields, queryParams, None)

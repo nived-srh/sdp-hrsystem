@@ -3,6 +3,7 @@ from flask_cors import CORS
 from .config import AppConfig
 from .database import DatabaseConnect
 from .models import *
+from . import utils 
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -13,8 +14,9 @@ db = None
 @app.route("/")
 def home():
     if 'userSession' not in session:        
-        return redirect(url_for('login'))
-    return render_template("base.html", hasSidebar=True)
+        return redirect(url_for('login'))    
+    views = utils.fetchSidebarLinks(db, session['userSession'])    
+    return render_template("base.html", hasSidebar=True, views=views)
 
 @app.route("/login", methods=['GET','POST'])
 def login():
@@ -40,27 +42,6 @@ def logout():
         print(err)
     finally:         
         return redirect(url_for('login'))
-
-@app.route('/views')
-def fetchSidebarLinks():    
-    if 'userSession' not in session:        
-        return redirect(url_for('login'))
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    results = access.ProfileAccess().fetchProfileAccessByUsername(db, session['userSession'])
-    
-    if results != None:
-        return jsonify({
-            "users" : [{
-            "view": row.view_name,
-            "username": row.username,          
-        } for row in results]})
-    else:
-        return jsonify({
-             "error" : "UNAUTHORIZED",
-             "errorDetail" : results
-        }), 401
 
 @app.route("/createUser", methods=['POST'])
 def createUser():
