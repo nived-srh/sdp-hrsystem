@@ -41,6 +41,27 @@ def logout():
     finally:         
         return redirect(url_for('login'))
 
+@app.route('/views')
+def fetchSidebarLinks():    
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    results = access.ProfileAccess().fetchProfileAccessByUsername(db, session['userSession'])
+    
+    if results != None:
+        return jsonify({
+            "users" : [{
+            "view": row.view_name,
+            "username": row.username,          
+        } for row in results]})
+    else:
+        return jsonify({
+             "error" : "UNAUTHORIZED",
+             "errorDetail" : results
+        }), 401
+
 @app.route("/createUser", methods=['POST'])
 def createUser():
     global db

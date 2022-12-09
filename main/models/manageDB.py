@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker    
 from .base import Model
-from .access import Profile, View, ViewDetail 
+from .access import Profile, ProfileAccess
 from .jobs import JobListing, JobApplication
 from .accounts import Account, Project, ProjectAssignment
 from .services import DailyStatus, Vacation
@@ -25,22 +25,16 @@ def initializeDB(db):
     formData["password"] = "admin"
     formData["last_name"] = "admin"
 
-    formData["view_name"] = "admin"
-    view = View(formData)
-    results.append(view.createViewWithDetails(db, formData))
-    
-    formData["view_name"] = "admin2"
-    view2 = View(formData)
-    results.append(view2.createViewWithDetails(db, formData))
-
-    prf = Profile("admin", view2)
-    results.append(prf.createProfile(db))
+    formData["profile_name"] = "admin"
+    prf = Profile(formData)
+    results.append(prf.createProfileWithAccess(db, formData))
     
     formData= {}
     formData["username"] = "admin"
     formData["email"] = "admin"
     formData["password"] = "admin"
     formData["last_name"] = "admin"
+    formData["profile"] = prf
     
     emp = Employee()
     results.append(emp.createEmployeeForm(db, formData))

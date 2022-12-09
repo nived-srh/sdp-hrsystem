@@ -13,6 +13,8 @@ class Person(base.Model):
     is_active = Column(Boolean, nullable=False)
     first_name = Column(String, index=True)
     last_name = Column(String, nullable=False, index=True)
+    user_profile = Column(Integer, ForeignKey("profile.id"))
+    profile = relationship("Profile", back_populates="persons")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
     def __init__(self, formData = None):
@@ -23,6 +25,7 @@ class Person(base.Model):
             self.username = formData["username"]
             self.last_name = formData["last_name"]
             self.first_name = formData["first_name"] if "first_name" in formData else None
+            self.profile = formData["profile"] if "profile" in formData else None
 
     def validatePerson(self, db, username, password):
         try:
