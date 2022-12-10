@@ -6,6 +6,8 @@ class Profile(base.Model):
     __tablename__ = 'profile'
     id = Column(Integer, primary_key=True)
     profile_name = Column(String, nullable=False, index=True)
+    profile_descr = Column(String)
+    profile_active = Column(Boolean, default=True)
     children = relationship("ProfileAccess", back_populates="profile")
     persons = relationship("Person", back_populates="profile")
     
@@ -17,19 +19,18 @@ class Profile(base.Model):
         self.__init__(formData)
         return self.createProfile(self,db)
 
-    def createProfileWithAccess(self, db, formData):
-        self.view_name = formData["profile_name"]
-        if formData["profile_name"] == "admin":
-            formData["is_admin"] = True
+    def createProfileWithAccess(self, db, viewList, formData):
+        self.profile_name = formData["profile_name"]
+        if formData["profile_name"] == "ADMIN" or  formData["profile_name"] == "HR" :
+            formData["full_access"] = True
         else:            
-            formData["is_admin"] = False
+            formData["full_access"] = False
         response = self.createProfile(db)
         if response == "INSERTED_PROFILE":
             session = db.initiateSession()
             try:
-                for item in ACCESS_LIST:
-                    formData["view_name"] = item
-                    pfa = ProfileAccess(self, formData)
+                for item in viewList:
+                    pfa = ProfileAccess(self, item, formData)
                     session.add(pfa)
                 commitStatus = db.commitSession(session)
                 if commitStatus == "SUCCESS":
@@ -58,43 +59,43 @@ class Profile(base.Model):
             return "MISSING_PROFILE_NAME"
         else:
             return "DUPLICATE_PROFILE"
-            
-#ACCESS CONTROL
-ACCESS_LIST = ["dashboard", "profile", "dailystatus", "vacation", "settings", "recruitment", "payroll", "candidate", "external", "employee", "accounts", "projects", "profiles", "views"]
+    
+    def fetchProfiles(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('profile', queryFields, queryParams, queryLimit)
 
+    def fetchProfilesWithPersonCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('profile', 'profile_name, profile_descr, profile_active, (SELECT COUNT(id) FROM person WHERE person.profile_id = profile.id)', queryParams, queryLimit)    
+        
 class ProfileAccess(base.Model):
     __tablename__ = 'profileaccess'
     id = Column(Integer, primary_key=True)
-    view_name = Column(String, default="default", index=True) 
-    view_group = Column(String, default="default", index=True) 
-    view_url = Column(String, default="/", index=True) 
-    view_label = Column(String) 
     allow_read = Column(Boolean, default=False)
     allow_create = Column(Boolean, default=False)
     allow_edit = Column(Boolean, default=False)
     allow_delete = Column(Boolean, default=False)
     profile_id = Column(Integer, ForeignKey("profile.id"))
+    view_id = Column(Integer, ForeignKey("view.id"))
     profile = relationship("Profile", back_populates="children")
+    view = relationship("View", back_populates="children")
 
-    def __init__(self, profile = None, formData = None):
-        if profile != None and formData != None:
+    def __init__(self, profile = None, view = None, formData = None):
+        if view != None and profile != None and formData != None:
+            self.view = view if view is not None else None
             self.profile = profile if profile is not None else None
-            self.view_name = formData["view_name"] if "view_name" in formData else "invalid"
-            self.view_group = formData["view_group"] if "view_group" in formData else None
-            if formData["is_admin"] == True:
+            if formData["full_access"] == True:
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
             else:
-                self.allow_read = formData["allowRead"] if "allowRead" in formData else False
-                self.allow_create = formData["allowCreate"] if "allowCreate" in formData else False
-                self.allow_edit = formData["allowEdit"] if "allowEdit" in formData else False
-                self.allow_delete = formData["allowDelete"] if "allowDelete" in formData else False
+                self.allow_read = True
+                self.allow_create = True
+                self.allow_edit = True
+                self.allow_delete = True
 
     def createProfileAccessForm(self, db, formData):
         self.__init__(formData)
-        return self.createViewDetail(db)
+        return self.createProfileAccess(db)
 
     def createProfileAccess(self, db):
         existingProfileAccess = None #self.fetchUsers(db, username)
@@ -112,11 +113,59 @@ class ProfileAccess(base.Model):
         else:
             return "DUPLICATE_PROFILEACCESS"
     
-    def fetchProfileAccess(self, db, queryFields, queryParams, queryLimit):
+    def fetchProfileAccess(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('profileaccess', queryFields, queryParams, queryLimit)
 
     def fetchProfileAccessByUsername(self, db, username, accessCheck = False):
         if username != None and username != '':
-            queryParams = 'profileaccess.profile_id = person.user_profile AND username = \'' + username + '\''
-            queryFields = 'view_name, view_group, view_url, view_label, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, allow_read'
-            return db.fetchData('profileaccess, person', queryFields, queryParams, None)
+            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND username = \'' + username + '\''
+            queryFields = 'view_name, view_group, view_url, view_label, view_tab, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, view_tab, allow_read'
+            return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
+
+class View(base.Model):
+    __tablename__ = 'view'
+    id = Column(Integer, primary_key=True)
+    view_name = Column(String, default="default", unique=True, index=True) 
+    view_group = Column(String, default="default", index=True) 
+    view_url = Column(String, default="/", index=True) 
+    view_label = Column(String) 
+    view_tab = Column(Boolean, default=False)
+    view_icon = Column(String) 
+    allow_read_default = Column(Boolean, default=False)
+    allow_create_default = Column(Boolean, default=False)
+    allow_edit_default = Column(Boolean, default=False)
+    allow_delete_default = Column(Boolean, default=False)
+    children = relationship("ProfileAccess", back_populates="view")
+
+
+    def __init__(self, **kwargs):
+        if len(list(kwargs.keys())) > 0:
+            self.view_name = kwargs["view_name"]
+            self.view_group = kwargs["view_group"]
+            self.view_url = kwargs["view_url"]
+            self.view_label = kwargs["view_label"]
+            self.view_icon = kwargs["view_icon"]
+            self.view_tab = kwargs["view_tab"] if "view_tab" in kwargs else False
+            self.allow_read_default = kwargs["allow_read_default"] if "allow_read_default" in kwargs else False
+            self.allow_create_default = kwargs["allow_create_default"] if "allow_create_default" in kwargs else False
+            self.allow_edit_default = kwargs["allow_edit_default"] if "allow_edit_default" in kwargs else False
+            self.allow_delete_default = kwargs["allow_delete_default"] if "allow_delete_default" in kwargs else False
+
+    def createView(self, db):
+        existingView = None #self.fetchUsers(db, username)
+        if existingView == None or existingView == []:
+            try:
+                session = db.initiateSession()
+                session.add(self)
+                commitStatus = db.commitSession(session)
+                if commitStatus == "SUCCESS":
+                    return "INSERTED_VIEW"
+                else:
+                    return "ERROR_" + commitStatus
+            except Exception as err:
+                return "ERR:"
+        else:
+            return "DUPLICATE_VIEW"
+    
+    def fetchViews(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('view', queryFields, queryParams, queryLimit)

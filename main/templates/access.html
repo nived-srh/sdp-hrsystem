@@ -1,0 +1,84 @@
+{% extends "main.html" %}
+
+{% block content %}
+<div class="container-fluid px-5">
+    <h1 class="mb-4">Manage Access</h1>
+
+    <div id="ProfileForm" class="profileForm">
+        Test
+    </div>
+
+    {% if "profiles" in response %}
+    <table class="table table-sm table-hover table-bordered shadow-sm text-center">
+        <thead>
+            <tr>
+              <th class="p-2 bg-white text-left " scope="col" colspan="6"><span class="align-middle pl-2">Profiles</span><a href="#" onclick="toggleForm(event, 'ProfileForm');" style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add Profile</button></a></th>
+            </tr>
+            <tr class="text-center" style="background-color:#D6EAF8">
+                <th scope="col" colspan="2" style="width:10%">Action</th>
+                <th scope="col">Name</th>
+                <th scope="col">Description</th>
+                <th scope="col">Is Active</th>
+                <th scope="col">Assigned Users</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in response["profiles"] %}
+            <tr>
+                <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
+                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>
+                <td>{{item.profile_name}}</td>
+                <td>{{item.profile_descr}}</td>
+                <td>{{item.profile_active}}</td>
+                <td>{{item.count}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div id="ViewForm" class="viewForm">
+        Test
+    </div>
+
+    {% if "views" in response %}
+    <table class="table table-sm table-hover table-bordered shadow-sm text-center">
+        <thead>
+            <tr>
+              <th class="p-2 bg-white text-left" scope="col" colspan="11"><span class="align-middle pl-2">Default Views</span><a href="#" onclick="toggleForm(event, 'ViewForm');" style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add View</button></a></th>
+            </tr>
+            <tr class="text-center" style="background-color:#D6EAF8">
+                <th scope="col" colspan="2" style="width:10%">Action</th>
+                <th scope="col">Label</th>
+                <th scope="col">Name</th>
+                <th scope="col">Group</th>
+                <th scope="col">URL</th>
+                <th scope="col">Tab Active</th>
+                <th scope="col">Allow Read (dflt)</th>
+                <th scope="col">Allow Create (dflt)</th>
+                <th scope="col">Allow Edit (dflt)</th>
+                <th scope="col">Allow Delete (dflt)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in response["views"] %}
+            <tr style="background-color:#FFFFFF">
+                <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
+                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>
+                <td>{{item.view_label}}</td>
+                <td>{{item.view_name}}</td>
+                <td>{{item.view_group}}</td>
+                <td>{{item.view_url}}</td>
+                <td>{{item.view_tab}}</td>
+                <td>{{item.allow_read_default}}</td>
+                <td>{{item.allow_create_default}}</td>
+                <td>{{item.allow_edit_default}}</td>
+                <td>{{item.allow_delete_default}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+</div>
+{% endblock content %}

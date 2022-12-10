@@ -15,6 +15,9 @@ db = None
 def home():
     if 'userSession' not in session:        
         return redirect(url_for('login'))    
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
     views = utils.fetchSidebarLinks(db, session['userSession'])    
     return render_template("base.html", hasSidebar=True, views=views)
 
@@ -43,6 +46,23 @@ def logout():
     finally:         
         return redirect(url_for('login'))
 
+@app.route("/search", methods=['POST'])
+def globalSearch():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))    
+    global db
+    views = utils.fetchSidebarLinks(db, session['userSession'])    
+
+    '''
+    if userId != None:
+        session['usersession'] = request.json["username"]
+    '''
+    #return render_template("jobs.html", hasSidebar=True, views=[ userId ,"Logout"])
+
+    return jsonify({
+        "results " : response
+    })
+    
 @app.route("/createUser", methods=['POST'])
 def createUser():
     global db
@@ -60,28 +80,27 @@ def createUser():
     return jsonify({
         "results " : response
     })
-    
-@app.route("/fetchUsers", methods=['GET'])
-def fetchUsers():
+
+@app.route("/fetchData/<table>", defaults={'limit': 10})
+@app.route("/fetchData/<table>/<limit>")   
+def fetchData(table, limit):
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    if request.args.getlist('username') != None:
-        results = users.Person().fetchUsers(db, request.args.getlist('username'))
-    else:        
-        results = users.Person().fetchUsers(db)
+
+    if table == "profiles":
+        results = access.Profile().fetchProfiles(db)
     
     if results != None:
         return jsonify({
-            "users" : [{
-            "id": row.id,
-            "username": row.email,          
+            table : [{
+            "id": row.id , 
+            "profile_name" : row.profile_name    
         } for row in results]})
     else:
         return jsonify({
-             "error" : "UNAUTHORIZED",
-             "errorDetail" : results
-        }), 401
+             table : []
+        }), 201
 
 @app.route("/jobs")
 def jobs():
@@ -91,6 +110,7 @@ def jobs():
     
     return render_template("jobs.html", hasSidebar=True, views=["Home","Logout"])
 
+@app.route("/emp", defaults={'action' : "read", 'key': None})
 @app.route("/emp/<action>", defaults={'key': None})
 @app.route("/emp/<action>/<key>")
 def emp(action,key):
@@ -102,15 +122,49 @@ def emp(action,key):
         "results " : action + '' +  (key if key != None else "noo")
     })
 
-@app.route("/employee")
-def employee():
+@app.route("/people", defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/people/<table>/<action>", defaults={'key': None}, methods=['POST'])
+@app.route("/people/<table>/<action>/<key>", methods=['GET','POST'])
+def managePeople(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
+        
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    return render_template("employees.html", hasSidebar=True, views=["Home","Logout"])
+
+    views = utils.fetchSidebarLinks(db, session['userSession'])    
+
+    if request.method == 'GET':
+        persons = users.Person().fetchPersons(db)
+        response = { "employees" : persons }    
+        return render_template("people.html", hasSidebar=True, action=action, key=key, views=views, response=response)
+    elif request.method == 'POST':
+        if table == "employee" and action == "create":
+            
+            return jsonify({
+                "results " : "HEre"
+            })
+    return jsonify({
+        "results " : request.method
+    })
+
+@app.route("/access", defaults={'action' : "read", 'key': None})
+@app.route("/access/<action>", defaults={'key': None})
+@app.route("/access/<action>/<key>")
+def manageAccess(action, key):
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+        
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    views = utils.fetchSidebarLinks(db, session['userSession'])    
+    profiles = access.Profile().fetchProfilesWithPersonCount(db)
+    viewList = access.View().fetchViews(db)
+    response = { "profiles" : profiles, "views" : viewList }    
+    return render_template("access.html", hasSidebar=True, action=action, key=key, views=views, response=response)
 
 @app.route("/createDatabase")
 def createDB():

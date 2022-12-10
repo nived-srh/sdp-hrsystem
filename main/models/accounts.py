@@ -8,14 +8,15 @@ class Account(base.Model):
     acc_name = Column(String, nullable=False, index=True)
     acc_type = Column(String, nullable=False, index=True)
     acc_status = Column(String, nullable=False, index=True, default="ACTIVE")
-    children = relationship("Project", back_populates="account")
+    projects = relationship("Project", back_populates="account")
+    external_persons = relationship("External", back_populates="account")
 
 class Project(base.Model):
     __tablename__ = 'project'
     id = Column(Integer, primary_key=True)
     description = Column(String)
     account_id = Column(Integer, ForeignKey("account.id"))
-    account = relationship("Account", back_populates="children")
+    account = relationship("Account", back_populates="projects")
     children = relationship("ProjectAssignment", back_populates="project")
     
 class ProjectAssignment(base.Model):

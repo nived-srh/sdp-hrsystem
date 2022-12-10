@@ -1,30 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<meta charset="utf-8">
 	<title>HRS</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<script src="https://kit.fontawesome.com/ee35f341e4.js" crossorigin="anonymous"></script>
-	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
-	<script type="text/javascript" src="{{ url_for('static', filename='js/app.js') }}"></script>
 	<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 	<link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
-	<script src="https://kit.fontawesome.com/ee35f341e4.js" crossorigin="anonymous"></script>
-	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 </head>
+
 <body>
 	<div class="container-fluid">
-        <div class="row" style="min-height:100vh">
-			{% if hasSidebar %}			
-			<div class="col-sm-2 border-end border-2" style="background-color:#ffffff;min-width:320px"> 
+		<div class="row" style="min-height:100vh;">
+			{% if hasSidebar %}
+			<div class="col-sm-2 border-end border-2 p-0"
+				style="background-color:#ffffff;max-width:320px;min-width:320px;">
 				{% include 'sidebar.html' %}
 			</div>
-			{% endif %}			
-			<div class="col p-0" style="background-color:#f5f8fe">      
+			{% endif %}
+			<div class="col p-0" style="background-color:#f5f8fe">
+				{% if request.path != '/login' and request.path != '/jobs' %}
+				<div class="container-fluid px-5">
+					<div class="d-flex flex-row bd-highlight pt-3 pb-3">
+						<div class="p-2 flex-grow-1 bd-highlight">
+							<form action="http://localhost:5000/search" method="POST" autocomplete="off">
+								<div class="input-group mb-3">
+									<span class="input-group-text"
+										style="border-top-right-radius: 0;border-bottom-right-radius: 0;"><i
+											class="fa-solid fa-search fa-flip-horizontal"></i></span>
+									<input type="text" class="form-control" id="searchTerm" name="searchTerm"
+										placeholder="Search Accounts, Projects or People"
+										aria-label="Recipient's username" aria-describedby="button-addon2"
+										style="height:40px;">
+									<button class="btn btn-outline-secondary" type="button" id="button-addon2"
+										style="width:150px;border-top-left-radius: 0;border-bottom-left-radius: 0;">Search</button>
+								</div>
+							</form>
+						</div>
+						<div class="d-flex p-2 bd-highlight justify-content-end" style="min-width:300px;">
+							<img src="{{ url_for('static', filename='images/janedoe.jpeg') }}" alt="mdo" width="40"
+								height="40" class="rounded-circle border border-secondary">
+						</div>
+					</div>
+				</div>
+				{% endif %}
 				{% block content %}
 				{% endblock content %}
 			</div>
-        </div> 
-    </div>
+		</div>
+	</div>
+	<script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.js') }}"></script>
+	<script src="https://kit.fontawesome.com/ee35f341e4.js" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>

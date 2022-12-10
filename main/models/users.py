@@ -13,7 +13,7 @@ class Person(base.Model):
     is_active = Column(Boolean, nullable=False)
     first_name = Column(String, index=True)
     last_name = Column(String, nullable=False, index=True)
-    user_profile = Column(Integer, ForeignKey("profile.id"))
+    profile_id = Column(Integer, ForeignKey("profile.id"))
     profile = relationship("Profile", back_populates="persons")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
@@ -38,8 +38,8 @@ class Person(base.Model):
                         return None
         except Exception as err:
             return None
-    
-    def fetchPersons(self, db, queryFields, queryParams, queryLimit):
+
+    def fetchPersons(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('person', queryFields, queryParams, queryLimit)
 
     def fetchByUsername(self, db, usernames = []):
@@ -114,6 +114,9 @@ class External(Person):
     __tablename__ = 'external'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
     ext_type = Column(String)
+    account_id = Column(None, ForeignKey('account.id'), primary_key=True)
+    account = relationship("Account", back_populates="external_persons")
+    contract_period_days = Column(Integer)
 
     def __init__(self):
         pass

@@ -57,12 +57,14 @@ class DatabaseConnect():
                 self.closeSession(session)  
         return commitStatus          
 
-    def fetchData(self, queryTable, queryColumns, queryParams, queryLimit):        
+    def fetchData(self, queryTable, queryFields, queryParams, queryLimit):        
         if queryTable != None:
-            sql = "SELECT " + (queryColumns if queryColumns != None else "*" ) + ' FROM ' + queryTable
+            sql = "SELECT " 
+            sql += (queryFields if queryFields != None else "*" ) 
+            sql += " FROM " + queryTable
             if queryParams != None:
                 sql += " WHERE " + queryParams
-            if queryLimit!= None:
+            if queryLimit != None:
                 sql += " LIMIT " + queryLimit
             #return sql
             results = self.executeQuery(sql)
