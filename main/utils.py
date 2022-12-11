@@ -9,6 +9,9 @@ def fetchSidebarLinks(db, username):
         if row.allow_read:
             viewData[row.view_group].append(row)
     return viewData 
+
+def fetchSearchableViews(db, username):    
+    return access.ProfileAccess().fetchProfileAccessByUsername(db, username, onlyTables=True)
     
 def validateUserAccess(db, username, view, action):    
     results = access.ProfileAccess().fetchProfileAccessByUsername(db, username, True)

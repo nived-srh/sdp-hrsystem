@@ -27,26 +27,26 @@ def initializeDB(db):
 
     #CREATE_VIEWS
     viewList = []
-    viewList.append(View(view_name = "dashboard", view_group = "default", view_url = "/", view_label = "Dashboard", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "profile", view_group = "default", view_url = "/profile", view_label = "Profile", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "dailystatus", view_group = "default", view_url = "/dailystatus", view_label = "Daily Status", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "vacation", view_group = "default", view_url = "/vacation", view_label = "Vacation", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "settings", view_group = "default", view_url = "/settings", view_label = "Settings", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "accounts", view_group = "default", view_url = "/account", view_label = "Account", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "projects", view_group = "default", view_url = "/project", view_label = "Project", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "search", view_group = "default", view_url = "/search", view_label = "Search", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "employee", view_group = "default", view_url = "/employee", view_label = "Employee", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "consultants", view_group = "default", view_url = "/contractor", view_label = "Contractor", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "contractors", view_group = "default", view_url = "/consultant", view_label = "Consultant", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "access", view_group = "admin", view_url = "/access", view_label = "Access", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "profiles", view_group = "admin", view_url = "/profile", view_label = "Profile", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "views", view_group = "admin", view_url = "/view", view_label = "View", view_icon = "", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "people", view_group = "manage", view_url = "/people", view_label = "People", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "payroll", view_group = "manage", view_url = "/payroll", view_label = "Payroll", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "recruitment", view_group = "manage", view_url = "/recruitment", view_label = "Recruitment", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "jobs", view_group = "public", view_url = "/jobs", view_label = "Jobs", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "myapplication", view_group = "public", view_url = "/jobs/myapplication", view_label = "My Applications", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
-    viewList.append(View(view_name = "myapplication_signedin", view_group = "candidate", view_url = "/jobs/myapplication", view_label = "My Applications", view_icon = "", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "dashboard", view_group = "default", view_url = "/", view_label = "Dashboard", view_icon = "fa-solid fa-border-none fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "profile", view_group = "default", view_url = "/profile", view_label = "Profile", view_icon = "fa-regular fa-user fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "dailystatus", view_group = "default", view_url = "/dailystatus", view_label = "Daily Status", view_icon = "fa-solid fa-calendar-day fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "vacation", view_group = "default", view_url = "/vacation", view_label = "Vacation", view_icon = "fa-solid fa-plane-departure fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "account", view_group = "default", view_url = "/account", view_label = "Account", view_icon = "fa-solid fa-briefcase fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "project", view_group = "default", view_url = "/project", view_label = "Project", view_icon = "fa-regular fa-folder-open fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "search", view_group = "default", view_url = "/search", view_label = "Search", view_icon = "fa-solid fa-magnifying-glass fa-fw", view_type = "PAGE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "employee", view_group = "default", view_url = "/employee", view_label = "Employee", view_icon = "fa-regular fa-address-card fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "consultant", view_group = "default", view_url = "/contractor", view_label = "Contractor", view_icon = "fa-regular fa-address-card fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "contractor", view_group = "default", view_url = "/consultant", view_label = "Consultant", view_icon = "fa-regular fa-address-card fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "people", view_group = "manage", view_url = "/people", view_label = "People", view_icon = "fa-solid fa-user-group fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "accounts", view_group = "manage", view_url = "/accounts", view_label = "Accounts", view_icon = "fa-solid fa-address-card fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "payroll", view_group = "manage", view_url = "/payroll", view_label = "Payroll", view_icon = "fa-solid fa-file-invoice-dollar fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "recruitment", view_group = "manage", view_url = "/recruitment", view_label = "Recruitment", view_icon = "fa-solid fa-tower-observation fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "jobs", view_group = "public", view_url = "/jobs", view_label = "Jobs", view_icon = "fa-solid fa-tower-observation fa-fw", view_type = "PAGE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "myapplication", view_group = "public", view_url = "/jobs/myapplication", view_label = "My Applications", view_icon = "fa-regular fa-user fa-fw", view_type = "PAGE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "access", view_group = "admin", view_url = "/access", view_label = "Access", view_icon = "fa-solid fa-fingerprint fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "profiles", view_group = "admin", view_url = "/profile", view_label = "Profile", view_icon = "fa-solid fa-fingerprint fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "views", view_group = "admin", view_url = "/view", view_label = "View", view_icon = "fa-solid fa-fingerprint fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "settings", view_group = "admin", view_url = "/settings", view_label = "Settings", view_icon = "fa-solid fa-gear fa-fw", view_type = "PAGE", view_tab = True, allow_read_default = True, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
     session = db.initiateSession()
     session.add_all(viewList)
     db.commitSession(session, True)
@@ -69,9 +69,17 @@ def initializeDB(db):
     formData["email"] = "admin"
     formData["password"] = "admin"
     formData["last_name"] = "admin"
-    formData["profile"] = prf
+    formData["profile_id"] = 1
     
     emp = Employee()
     results.append(emp.createEmployeeForm(db, formData))
+    formData["username"] = "manager"
+    formData["email"] = "manager"
+    formData["password"] = "manager"
+    formData["last_name"] = "manager"
+    formData["profile_id"] = 2
+    emp2 = Employee()
+    results.append(emp2.createEmployeeForm(db, formData))
+
     return results
     

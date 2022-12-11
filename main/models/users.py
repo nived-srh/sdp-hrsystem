@@ -25,7 +25,10 @@ class Person(base.Model):
             self.username = formData["username"]
             self.last_name = formData["last_name"]
             self.first_name = formData["first_name"] if "first_name" in formData else None
-            self.profile = formData["profile"] if "profile" in formData else None
+            if "profile_id" in formData:
+                self.profile_id = formData["profile_id"]
+            elif "profile" in formData:
+                self.profile = formData["profile"]
 
     def validatePerson(self, db, username, password):
         try:
@@ -45,9 +48,9 @@ class Person(base.Model):
     def fetchByUsername(self, db, usernames = []):
         if usernames != [] and usernames != None:
             if isinstance(usernames, str):   
-                params = 'email = \'' + usernames + '\'' 
+                params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
-                params = 'email IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
+                params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
         return self.fetchPersons(db, 'email, hashed_password, username', params, None) 
 
     ''' Methods overrode by child insert methods
@@ -114,7 +117,7 @@ class External(Person):
     __tablename__ = 'external'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
     ext_type = Column(String)
-    account_id = Column(None, ForeignKey('account.id'), primary_key=True)
+    account_id = Column(None, ForeignKey('account.id'))
     account = relationship("Account", back_populates="external_persons")
     contract_period_days = Column(Integer)
 
@@ -123,9 +126,9 @@ class External(Person):
 
     def createExternalForm(self, db, formData):
         self.user_type = "external"
-        self.num_vacations = 30
+        self.ext_type = formData["ext_type"]
         super(External, self).__init__(formData)  
-        existingUsers = self.fetchByUsername(db, self.username)
+        existingUsers = None#self.fetchByUsername(db, self.username)
         if existingUsers == None or list(existingUsers) == []:
             return self.createExternal(db)
         else:
@@ -136,12 +139,14 @@ class External(Person):
             session = db.initiateSession()                
             session.add(self)
             commitStatus = db.commitSession(session, False)
+            print('TEst' , commitStatus)
             if commitStatus != "Success":
                 return "INSERTED_EXTERNAL"
             else:
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            print('TEst' , err)
+            return "ERROR" 
 
 class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}

@@ -88,10 +88,10 @@ class ProfileAccess(base.Model):
                 self.allow_edit = True
                 self.allow_delete = True
             else:
-                self.allow_read = True
-                self.allow_create = True
-                self.allow_edit = True
-                self.allow_delete = True
+                self.allow_read = False
+                self.allow_create = False
+                self.allow_edit = False
+                self.allow_delete = False
 
     def createProfileAccessForm(self, db, formData):
         self.__init__(formData)
@@ -109,24 +109,31 @@ class ProfileAccess(base.Model):
                 else:
                     return "ERROR_" + commitStatus
             except Exception as err:
-                return "ERR:"
+                return "ERROR"
         else:
             return "DUPLICATE_PROFILEACCESS"
     
     def fetchProfileAccess(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('profileaccess', queryFields, queryParams, queryLimit)
 
-    def fetchProfileAccessByUsername(self, db, username, accessCheck = False):
+    def fetchProfileAccessByUsername(self, db, username, accessCheck = False, onlyTables = False):
         if username != None and username != '':
-            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND username = \'' + username + '\''
-            queryFields = 'view_name, view_group, view_url, view_label, view_tab, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, view_tab, allow_read'
-            return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
+            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND profileaccess.allow_read = true AND username = \'' + username + '\''
+            queryFields = 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read'
+        else:
+            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND profileaccess.allow_read = true AND view.view_group = \'PUBLIC\' ORDER BY profileaccess.id '
+            queryFields = 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read'
+        
+        if onlyTables:
+            queryParams += ' AND view.view_type = \'TABLE\' '
+        return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
 
 class View(base.Model):
     __tablename__ = 'view'
     id = Column(Integer, primary_key=True)
     view_name = Column(String, default="default", unique=True, index=True) 
     view_group = Column(String, default="default", index=True) 
+    view_type = Column(String, default="default", index=True) 
     view_url = Column(String, default="/", index=True) 
     view_label = Column(String) 
     view_tab = Column(Boolean, default=False)
@@ -141,7 +148,8 @@ class View(base.Model):
     def __init__(self, **kwargs):
         if len(list(kwargs.keys())) > 0:
             self.view_name = kwargs["view_name"]
-            self.view_group = kwargs["view_group"]
+            self.view_group = str(kwargs["view_group"]).upper()
+            self.view_type = str(kwargs["view_type"]).upper()
             self.view_url = kwargs["view_url"]
             self.view_label = kwargs["view_label"]
             self.view_icon = kwargs["view_icon"]
@@ -163,7 +171,7 @@ class View(base.Model):
                 else:
                     return "ERROR_" + commitStatus
             except Exception as err:
-                return "ERR:"
+                return "ERROR"
         else:
             return "DUPLICATE_VIEW"
     

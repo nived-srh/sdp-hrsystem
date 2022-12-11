@@ -3,43 +3,8 @@
 {% block content %}
 <div class="container-fluid p-0">
   <div class="row" style="min-height:100vh;">    
-    <div class="col border-end border-3" style="background-color:#f5f8fe;">
-      <div class="d-flex container mt-3 justify-content-center align-content-center flex-wrap" style="min-height:90%;">
-        <div class="card mb-3" style="width:400px">
-          <div class="card-body">
-            <h5 class="card-title">Welcome Back,</h5>
-            <h6 class="card-subtitle mb-2 text-muted">Please sign in here.</h6>
-            <p class="card-text">
-            <div className="login-wrapper">
-              <form action="/login" method="POST" autocomplete="off">
-                
-                <div class="form-group">
-                  <label for="username">Username / Email</label>
-                  <input type="text" class="form-control" id="username" name="username" aria-describedby="usernameHelp"
-                    placeholder="jdean@example.com">
-                  <small id="usernameHelp" class="form-text text-muted"></small>
-                </div>
-
-                <div class="form-group">
-                  <label for="password">Password</label>
-                  <input type="password" class="form-control" id="password" name="password"
-                    aria-describedby="passwordHelp" placeholder="">
-                  <small id="passwordHelp" class="form-text text-muted"></small>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Sign In</button>
-
-              </form>
-            </div>
-            </p>
-          </div>
-          <!--<div class="card-footer">
-            <small class="text-muted">Last updated: 2 days ago</small>
-          </div>-->
-        </div>
-      </div>
-    </div>
-    <div class="col border-end border-3 bg-image login-bg" style="background-color:#ffffff;width:100%;">
+    {% include 'login-form.html' %}  
+    <div class="col-sm-8 border-end border-3 bg-image login-bg" style="background-color:#ffffff;width:100%;">
       <div class="container-fluid py-5">
         <h1 class="display-5 fw-bold">Join Us.</h1>
         <p class="col-md-8 fs-4 p-0">We're looking for passionate people to join us on our mission.</p>

@@ -12,10 +12,31 @@ function openPeopleTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
-document.getElementById("manageEmployees").click();
+$( document ).ready(function() {
+    if( document.getElementById("people-data") != null){
+        people_data = $('#people-data').data();
+        console.log(people_data.table);
+        if(people_data.table == "consultants"){
+            document.getElementById("manageConsultants").click();
+            if(people_data.action == "create"){
+                toggleForm('ConsultantForm');
+            }
+        }else if(people_data.table == "contractors"){
+            document.getElementById("manageContractors").click();
+            if(people_data.action == "create"){
+                toggleForm('ContractorForm');
+            }
+        }else{
+            document.getElementById("manageEmployees").click();
+            if(people_data.action == "create"){
+                toggleForm('EmployeeForm');
+                fetchProfiles('Employees','#employee_profile_id');
+            }
+        }
+    }
+});
 
-function toggleForm(evt, formId) {
-    console.log(document.getElementById(formId).style.display);
+function toggleForm(formId) {
     if(document.getElementById(formId).style.display == "block"){
         document.getElementById(formId).style.display = "none";
     }else{
@@ -23,7 +44,7 @@ function toggleForm(evt, formId) {
     }
 }
 
-function fetchProfiles(evt, formId) {
+function fetchProfiles(formId, fieldId) {
     fetch('/fetchData/profiles')
     .then((response) => {
         console.log(response.status);
@@ -31,7 +52,7 @@ function fetchProfiles(evt, formId) {
     })
     .then(function(data) {
         console.log(data.profiles);
-        let dropdown = $('#profile_id');
+        let dropdown = $(fieldId);
         dropdown.empty();
         for (var i = 0; i < data.profiles.length; i++) {
             dropdown.append($('<option></option>').attr('value', data.profiles[i].id).text( data.profiles[i].profile_name));

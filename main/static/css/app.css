@@ -1,16 +1,37 @@
 @font-face {
-    font-family: Merriweather;
-    src: url("../font/Merriweather-Regular.ttf");
+    font-family: main-regular;
+    src: url("../font/AnticSlab-Regular.ttf");
+}
+
+@font-face {
+    font-family: main-Bold;
+    src: url("../font/AnticSlab-Regular.ttf");
 }
 
 body{
-  font-family: Merriweather;
+  font-family: main-regular;
 }
 
+.sidebarLinkHeader {
+    color:#a1a5bd;
+    font-size: 16px;
+    margin-top: 3vh;
+}
+
+.sidebarLinks {
+    color:#6e7598;
+    font-size: 20px;
+    padding-top: 0.5vh;
+    padding-bottom: 0.5vh;
+}
 .sidebarLinks:hover{
-    background-color: bisque;
+    background-color: #f5f8fe;
+    border: 5px solid;
+    border-radius: 5px;
+    border-color: #f5f8fe;
+    color:#3661ed;
+    font-weight: 300;
 }
-
 
 .login-bg {
     background-image: url("../images/main-bg.jpg");
@@ -53,7 +74,7 @@ body{
 }
 
 /* Style the tab content */
-.tabcontent, .profileForm, .viewForm, .EmployeeForm {
+.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm {
     display: none;
     margin-top:10px;
 }  

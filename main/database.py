@@ -66,7 +66,7 @@ class DatabaseConnect():
                 sql += " WHERE " + queryParams
             if queryLimit != None:
                 sql += " LIMIT " + queryLimit
-            #return sql
+                
             results = self.executeQuery(sql)
             return results        
         else:
