@@ -1,4 +1,4 @@
-function openPeopleTab(evt, tabName) {
+function toggleTab(evt, tabName) {
     var i, tabcontent, tablinks;
     tabcontent = document.getElementsByClassName("tabcontent");
     for (i = 0; i < tabcontent.length; i++) {
@@ -26,11 +26,15 @@ $( document ).ready(function() {
             if(people_data.action == "create"){
                 toggleForm('ContractorForm');
             }
-        }else{
+        }else if(people_data.table == "employees"){
             document.getElementById("manageEmployees").click();
             if(people_data.action == "create"){
                 toggleForm('EmployeeForm');
-                fetchProfiles('Employees','#employee_profile_id');
+                fetchData('profiles','#employee_profile_id');
+            }
+        }else if(people_data.table == "profiles"){
+            if(people_data.action == "create"){
+                toggleForm('ProfileForm');
             }
         }
     }
@@ -44,8 +48,9 @@ function toggleForm(formId) {
     }
 }
 
-function fetchProfiles(formId, fieldId) {
-    fetch('/fetchData/profiles')
+function fetchData(tableName, fieldId) {
+    let url = '/fetchData/' + tableName
+    fetch(url)
     .then((response) => {
         console.log(response.status);
         return response.json();

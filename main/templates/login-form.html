@@ -2,11 +2,11 @@
     <div class="d-flex container mt-3 justify-content-center align-content-center flex-wrap" style="min-height:90%;">
       <div class="card mb-3" style="width:400px">
         <div class="card-body">
-          <h5 class="card-title">Welcome Back,</h5>
+          <h5 class="card-title">Welcome,</h5>
           <h6 class="card-subtitle mb-2 text-muted">Please sign in here.</h6>
           <p class="card-text">
           <div className="login-wrapper">
-            <form action="/login" method="POST" autocomplete="off">
+            <form action="/login?returnUrl={{ request.path if request.path != '/login' else '/' }}" method="POST" autocomplete="off">
               
               <div class="form-group">
                 <label for="username">Username / Email</label>

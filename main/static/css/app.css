@@ -74,7 +74,7 @@ body{
 }
 
 /* Style the tab content */
-.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm {
+.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm, .ProfileForm {
     display: none;
     margin-top:10px;
 }  

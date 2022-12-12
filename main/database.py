@@ -39,9 +39,6 @@ class DatabaseConnect():
         else:
             session.close()
 
-    def commitSession(self):
-        self.commitSession(self.session)
-
     def commitSession(self, session, autoClose = True):
         commitStatus = "INITIATED"
         if session == None:
@@ -70,9 +67,19 @@ class DatabaseConnect():
             results = self.executeQuery(sql)
             return results        
         else:
-            return "{ \"error\": \"TABLE_NOT_SPECIFIED\" }" 
+            return "TABLE_NOT_SPECIFIED" 
 
-    def executeQuery(self, sql, autoClose = True):        
+    def deleteData(self, queryTable, queryParams):        
+        if queryTable != None:
+            sql = "DELETE FROM " + queryTable
+            if queryParams != None:
+                sql += " WHERE " + queryParams
+            self.executeQuery(sql, autoCommit = True)
+            return "DELETE_SUCCESS"        
+        else:
+            return "TABLE_NOT_SPECIFIED" 
+
+    def executeQuery(self, sql, autoClose = True, autoCommit = False):        
         if self.session == None:
             self.session = self.initiateSession()
 
@@ -81,8 +88,10 @@ class DatabaseConnect():
         except Exception as err:
             results = None
         finally: 
-            if autoClose:
-                self.closeSession(self.session)       
+            if autoCommit:
+                self.commitSession(self.session)     
+            elif autoClose:
+                self.closeSession(self.session)     
             return results     
             
     def createDatabase(self):

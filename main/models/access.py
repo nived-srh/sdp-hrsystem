@@ -8,23 +8,23 @@ class Profile(base.Model):
     profile_name = Column(String, nullable=False, index=True)
     profile_descr = Column(String)
     profile_active = Column(Boolean, default=True)
+    profile_custom = Column(Boolean, default=False)
     children = relationship("ProfileAccess", back_populates="profile")
     persons = relationship("Person", back_populates="profile")
     
     def __init__(self, formData = None):
         if formData != None:
-            self.profile_name = formData["profile_name"]
+            self.profile_name = str(formData["profile_name"]).upper()
+            self.profile_descr = formData["profile_descr"]
+            self.profile_active = True if "profile_active" in formData else False
+            self.profile_custom = True if "profile_custom" in formData else False
 
     def createProfileForm(self, db, formData):
         self.__init__(formData)
-        return self.createProfile(self,db)
+        return self.createProfile(db)
 
     def createProfileWithAccess(self, db, viewList, formData):
         self.profile_name = formData["profile_name"]
-        if formData["profile_name"] == "ADMIN" or  formData["profile_name"] == "HR" :
-            formData["full_access"] = True
-        else:            
-            formData["full_access"] = False
         response = self.createProfile(db)
         if response == "INSERTED_PROFILE":
             session = db.initiateSession()
@@ -40,11 +40,12 @@ class Profile(base.Model):
             except Exception as err:
                 return "ERROR_INS_PROFILE_WITH_ACCESS"
         else:
-            return "DUPLICATE_PROFILEACCESS"
+            return response
 
     def createProfile(self, db):
-        existingProfile = None #self.fetchUsers(db, username)
-        if (existingProfile == None or existingProfile == []) and self.profile_name is not None:
+        queryParams = "profile_name = '" + str(self.profile_name) + "'"
+        existingProfile = self.fetchProfiles(db, queryParams = queryParams)
+        if (existingProfile == None or list(existingProfile) == []) and self.profile_name != "":
             try:
                 session = db.initiateSession()
                 session.add(self)
@@ -55,17 +56,24 @@ class Profile(base.Model):
                     return "ERROR_" + commitStatus
             except Exception as err:
                 return "ERROR"
-        elif self.profile_name is None:
-            return "MISSING_PROFILE_NAME"
+        elif self.profile_name == "" or self.profile_name == None:
+            return "ERROR_MISSING_PROFILE_NAME"
         else:
-            return "DUPLICATE_PROFILE"
+            return "ERROR_DUPLICATE_PROFILE"
     
     def fetchProfiles(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('profile', queryFields, queryParams, queryLimit)
 
     def fetchProfilesWithPersonCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('profile', 'profile_name, profile_descr, profile_active, (SELECT COUNT(id) FROM person WHERE person.profile_id = profile.id)', queryParams, queryLimit)    
+        return db.fetchData('profile', 'id, profile_name, profile_descr, profile_active, profile_custom, (SELECT COUNT(id) FROM person WHERE person.profile_id = profile.id)', queryParams, queryLimit)    
         
+    def fetchProfileAssignment(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('profile, person', 'person.id, person.email, person.first_name, person.last_name', queryParams, queryLimit)
+
+    def deleteProfiles(self, db, recordIds):
+        queryParams = "id IN (" + ','.join([ '\'' + usr + '\'' for usr in recordIds]) + ") AND profile_custom = true"
+        return db.deleteData('profile', queryParams)
+
 class ProfileAccess(base.Model):
     __tablename__ = 'profileaccess'
     id = Column(Integer, primary_key=True)
@@ -82,13 +90,13 @@ class ProfileAccess(base.Model):
         if view != None and profile != None and formData != None:
             self.view = view if view is not None else None
             self.profile = profile if profile is not None else None
-            if formData["full_access"] == True:
+            if "profile_fullaccess" in formData:
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
             else:
-                self.allow_read = False
+                self.allow_read = True
                 self.allow_create = False
                 self.allow_edit = False
                 self.allow_delete = False
@@ -111,10 +119,15 @@ class ProfileAccess(base.Model):
             except Exception as err:
                 return "ERROR"
         else:
-            return "DUPLICATE_PROFILEACCESS"
+            return "ERROR_DUPLICATE_PROFILEACCESS"
     
     def fetchProfileAccess(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('profileaccess', queryFields, queryParams, queryLimit)
+
+    def fetchProfileAccessByProfile(self, db, profileId):
+        queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id =  \'' + profileId + '\''
+        queryFields = 'profileaccess.id, view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete'         
+        return db.fetchData('profileaccess, view', queryFields, queryParams, None)
 
     def fetchProfileAccessByUsername(self, db, username, accessCheck = False, onlyTables = False):
         if username != None and username != '':
@@ -173,7 +186,7 @@ class View(base.Model):
             except Exception as err:
                 return "ERROR"
         else:
-            return "DUPLICATE_VIEW"
+            return "ERROR_DUPLICATE_VIEW"
     
     def fetchViews(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('view', queryFields, queryParams, queryLimit)

@@ -5,6 +5,7 @@ from .access import Profile, ProfileAccess, View
 from .jobs import JobListing, JobApplication
 from .accounts import Account, Project, ProjectAssignment
 from .services import DailyStatus, Vacation
+from .payroll import Tier, Payroll, PayrollDetails
 from .users import Person, Employee, External, Candidate
 
 def createDB(db):
@@ -50,19 +51,33 @@ def initializeDB(db):
     session = db.initiateSession()
     session.add_all(viewList)
     db.commitSession(session, True)
-
+    
     formData["profile_name"] = "ADMIN"
+    formData["profile_descr"] = "Default Admin Profile"
+    formData["profile_active"] = True
+    formData["profile_fullaccess"] = True
     prf = Profile(formData)
     results.append(prf.createProfileWithAccess(db, viewList, formData))
+    del formData['profile_fullaccess']
 
-    
-    formData["profile_name"] = "MANAGER"
+    formData["profile_name"] = "CONSULTANT"
+    formData["profile_descr"] = "Default Consultant Profile"
+    formData["profile_active"] = True
     prf2 = Profile(formData)
     results.append(prf2.createProfileWithAccess(db, viewList, formData))
 
-    formData["profile_name"] = "HR"
+    formData["profile_name"] = "CONTRACTOR"
+    formData["profile_descr"] = "Default Contractor Profile"
+    formData["profile_active"] = True
     prf3 = Profile(formData)
     results.append(prf3.createProfileWithAccess(db, viewList, formData))
+    
+    formData["profile_name"] = "CANDIDATE"
+    formData["profile_descr"] = "Default Candidate Profile"
+    formData["profile_active"] = True
+    prf4 = Profile(formData)
+    results.append(prf4.createProfileWithAccess(db, viewList, formData))
+
 
     formData= {}
     formData["username"] = "admin"

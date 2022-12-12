@@ -29,10 +29,11 @@ def login():
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
         
         result = users.Person().validatePerson(db, request.form['username'], request.form['password'] )
+        returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args and request.args.get('returnUrl') != "/login"  else "/"
         
         if result != None:
-            session['userSession'] = result.email
-            return redirect("/access")
+            session['userSession'] = result.username
+            return redirect(returnUrl)
 
     return render_template("login.html")
 
@@ -109,14 +110,9 @@ def managePeople(table, action, key):
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
     views = utils.fetchSidebarLinks(db, session['userSession'])    
-    messages = {}
-    employees = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY id DESC")
-    contractors = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
-    consultants = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONSULTANT' ORDER BY id DESC")
-    response = { "employees" : employees, "contractors" : contractors, "consultants" : consultants  }    
-    if request.method == 'GET':
-        return render_template("people.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)                
-    elif request.method == 'POST':
+    response = {}
+
+    if request.method == 'POST':
         if action == "create":
             formData = dict(request.form)
             formData["password"] = AppConfig.DFLT_PASSWORD
@@ -125,21 +121,36 @@ def managePeople(table, action, key):
                 response["messages"] = new_employee
             elif table == "contractors":
                 formData["ext_type"] = "CONTRACTOR"
+                consultant_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CONTRACTOR'", queryLimit="1"))
+                formData["profile_id"] = consultant_profile[0].id
                 new_contractor = users.External().createExternalForm(db, formData)
                 response["messages"] = new_contractor
             elif table == "consultants":
                 formData["ext_type"] = "CONSULTANT"
-                consultant_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'HR'", queryLimit="1"))
+                consultant_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CONSULTANT'", queryLimit="1"))
                 formData["profile_id"] = consultant_profile[0].id
                 new_consultant = users.External().createExternalForm(db, formData)
                 response["messages"] = new_consultant
-            return render_template("people.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
-    return jsonify({
-        "results " : request.method
-    })
+    
+    if key != None:
+        if action == "delete":
+            formData = dict(request.form)
+            response["messages"] = "INITIATED_DELETE"
+        elif action == "edit":
+            formData = dict(request.form)
+            response["messages"] = "INITIATED_UDPATE"                
+    else:
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"
+
+    response["employees"] = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY id DESC")
+    response["contractors"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
+    response["consultants"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONSULTANT' ORDER BY id DESC")
+    return render_template("people.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
+    
 
 @app.route("/access",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
-@app.route("/access/<table>/<action>", defaults={'key': None}, methods=['POST'])
+@app.route("/access/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
+@app.route("/access/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/access/<table>/<action>/<key>", methods=['GET','POST'])
 def manageAccess(table, action, key):
     if 'userSession' not in session:        
@@ -150,15 +161,43 @@ def manageAccess(table, action, key):
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
     views = utils.fetchSidebarLinks(db, session['userSession'])    
+    response = {}
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
 
-    if request.method == 'GET':
-        if request.path == "/access":
-            profiles = access.Profile().fetchProfilesWithPersonCount(db)
-            viewList = access.View().fetchViews(db)
-            response = { "profiles" : profiles, "views" : viewList }    
-            return render_template("access.html", hasSidebar=True, action=action, key=key, views=views, response=response)
-        elif "/access/profile/read" in request.path :
+    if request.method == 'POST':
+        if action == "create":
+            formData = dict(request.form)
+            if table == "profiles" and request.form.get("profile_fullaccess") == None: 
+                new_profile = access.Profile().createProfileForm(db, formData)
+                response["messages"] = new_profile
+            elif  table == "profiles" and request.form.get("profile_fullaccess") != None:                
+                new_profile = access.Profile().createProfileWithAccess(db, formData)
+                response["messages"] = new_profile
+            if "ERROR" not in response["messages"]:
+                return redirect("/access?msg=" + response["messages"])
+    if key != None:
+        if action == "read":
+            queryParams = " profile.id = '" + key + "' " 
+            response["profileDetails"] = access.Profile().fetchProfiles(db, queryParams=queryParams, queryLimit="1")
+            queryParams += " AND person.profile_id = profile.id" 
+            response["profileAssignments"] = access.Profile().fetchProfileAssignment(db, queryParams=queryParams)
+            response["profileAccess"] = access.ProfileAccess().fetchProfileAccessByProfile(db, key)
+            return render_template("access.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
+        elif action == "edit":
             pass
+        elif action == "delete":
+            formData = dict(request.form)
+            result = access.Profile().deleteProfiles(db, list(key))
+            if result == "SUCCESS":
+                return redirect("/access?msg=" + result)
+            else:
+                response["messages"] = result
+    elif key == None and table != None and request.method == 'GET':
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"
+    response["profiles"] = access.Profile().fetchProfilesWithPersonCount(db)
+    response["views"] = access.View().fetchViews(db)
+    return render_template("access.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
 
 @app.route("/fetchData/<table>", defaults={'limit': 10})
 @app.route("/fetchData/<table>/<limit>")   

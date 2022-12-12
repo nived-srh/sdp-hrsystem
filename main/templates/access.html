@@ -2,17 +2,175 @@
 
 {% block content %}
 <div class="container-fluid px-5">
-    <h1 class="mb-4">Manage Access</h1>
-
-    <div id="ProfileForm" class="profileForm">
-        Test
+    <p><h1 class="mb-4">Manage Access</h1>
+    {% if key != None and action == "read" %}
+    {% if response["profileDetails"].rowcount > 0 %}
+    <table class="table table-sm table-hover table-bordered shadow-sm text-center">
+        <thead>
+            <tr>
+                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span
+                        class="align-middle pl-2">Profile Detail</span></th>
+            </tr>
+            <tr class="text-center" style="background-color:#D6EAF8">
+                <th scope="col">Name</th>
+                <th scope="col">Description</th>
+                <th scope="col">Is Active</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in response["profileDetails"] %}
+            <tr style="background-color:#FEFEFE">
+                <td>{{item.profile_name}}</td>
+                <td>{{item.profile_descr}}</td>
+                <td>{{item.profile_active}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% if response["profileAssignments"].rowcount > 0 %}
+    <table class="table table-sm table-hover table-bordered shadow-sm text-center">
+        <thead>
+            <tr>
+                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span
+                        class="align-middle pl-2">Assigned Users</span></th>
+            </tr>
+            <tr class="text-center" style="background-color:#D6EAF8">
+                <th scope="col">Last Name</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in response["profileAssignments"] %}
+            <tr style="background-color:#FEFEFE">
+                <td>{{item.last_name}}</td>
+                <td>{{item.first_name}}</td>
+                <td>{{item.email}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        No Assigned Users.
     </div>
-
+    {% endif %}
+    {% if response["profileAccess"].rowcount > 0 %}
+    <table class="table table-sm table-hover table-bordered shadow-sm text-center">
+        <thead>
+            <tr>
+                <th class="p-2 bg-white text-left " scope="col" colspan="12"><span
+                        class="align-middle pl-2">Profile Access Details</span></th>
+            </tr>
+            <tr class="text-center" style="background-color:#D6EAF8">
+                <th scope="col" colspan="2" style="width:10%">Action</th>
+                <th scope="col">View Label</th>
+                <th scope="col">View Name</th>
+                <th scope="col">View Group</th>
+                <th scope="col">View URL</th>
+                <th scope="col">View Tab</th>
+                <th scope="col">View Icon</th>
+                <th scope="col">Allow Read</th>
+                <th scope="col">Allow Create</th>
+                <th scope="col">Allow Edit</th>
+                <th scope="col">Allow Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in response["profileAccess"] %}
+            <tr style="background-color:#FEFEFE">
+                <td class="text-center"><a href="/access/profileaccess/edit/{{item.id}}"><i
+                            class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
+                <td class="text-center"><a href="/access/profileaccess/delete/{{item.id}}"><i
+                            class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>                
+                <td>{{item.view_label}}</td>
+                <td>{{item.view_name}}</td>
+                <td>{{item.view_group}}</td>
+                <td>{{item.view_url}}</td>
+                <td>{{item.view_tab}}</td>
+                <td>{{item.view_icon}}</td>
+                <td>{{item.allow_read}}</td>
+                <td>{{item.allow_create}}</td>
+                <td>{{item.allow_edit}}</td>
+                <td>{{item.allow_delete}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+        No Profile Access defined.
+    </div>
+    {% endif %}
+    {% else %}
+    {% if "messages" in response %}
+    {% if "ERROR" in response["messages"] %}
+    <div class="alert alert-warning" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% else %}
+    <div class="alert alert-success" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% endif %}
+    {% endif %}
+    <div id="Profiles">
+        <div class="d-flex flex-column bd-highlight">
+            <div class="bd-highlight">
+                <div id="ProfileForm" class="ProfileForm">
+                    <div class="card containter-fluid mb-3">
+                        <div class="card-header">
+                            Add Profile
+                        </div>
+                        <form action="/access/profiles/create" method="POST" autocomplete="off">
+                            <div class="card-body">
+                                <div class="form-group d-flex flex-row justify-content-between mb-2">
+                                    <div class="col-xs-2">
+                                        <label for="first_name">Profile Name</label>
+                                        <input type="text" class="form-control" id="profile_name" name="profile_name"
+                                            type="text" value="{{request.form['profile_name']}}">
+                                    </div>
+                                    <div class="col-xs-4 flex-grow-1 ml-4">
+                                        <label for="profile_descr">Profile Description</label>
+                                        <input type="text" class="form-control" id="profile_descr" name="profile_descr"
+                                            type="text" value="{{request.form['profile_descr']}}">
+                                    </div>
+                                    <div class="col-xs-4 ml-4">
+                                        <label for="profile_fullaccess">Full Access</label>
+                                        <input type="checkbox" class="form-control" id="profile_fullaccess"
+                                            name="profile_fullaccess" value="{{request.form['profile_fullaccess']}}"
+                                            unchecked>
+                                    </div>
+                                    <div class="col-xs-4 ml-4">
+                                        <label for="profile_active">Active</label>
+                                        <input type="checkbox" class="form-control" id="profile_active"
+                                            name="profile_active" value="{{request.form['profile_active']}}" checked>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">Create Profile</button>
+                                <a href="#" id="cancelProfileButton" onclick="toggleForm('ProfileForm');"
+                                    style="float:right;"><button class="btn btn-outline-danger"
+                                        type="button">Cancel</button></a>
+                            </div>
+                            <input type="hidden" id="profile_custom" name="profile_custom" value="TRUE" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     {% if "profiles" in response %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
         <thead>
             <tr>
-              <th class="p-2 bg-white text-left " scope="col" colspan="6"><span class="align-middle pl-2">Profiles</span><a href="#" onclick="toggleForm(event, 'ProfileForm');" style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add Profile</button></a></th>
+                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span
+                        class="align-middle pl-2">Profiles</span><a id="manageProfiles" href="#"
+                        onclick="toggleForm('ProfileForm');" style="float:right;"><button
+                            class="btn btn-outline-primary btn-sm" type="button">Add
+                            Profile</button></a></th>
             </tr>
             <tr class="text-center" style="background-color:#D6EAF8">
                 <th scope="col" colspan="2" style="width:10%">Action</th>
@@ -24,10 +182,16 @@
         </thead>
         <tbody>
             {% for item in response["profiles"] %}
-            <tr>
-                <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
-                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>
-                <td>{{item.profile_name}}</td>
+            <tr style="background-color:#FEFEFE">
+                <td class="text-center"><a href="/access/profiles/edit/{{item.id}}"><i
+                            class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
+                {% if item.profile_custom %}
+                <td class="text-center"><a href="/access/profiles/delete/{{item.id}}"><i
+                            class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>
+                {% else %}
+                <td class="text-center"></td>
+                {% endif %}
+                <td><a href="/access/profiles/read/{{item.id}}">{{item.profile_name}}</a></td>
                 <td>{{item.profile_descr}}</td>
                 <td>{{item.profile_active}}</td>
                 <td>{{item.count}}</td>
@@ -37,18 +201,15 @@
     </table>
     {% endif %}
 
-    <div id="ViewForm" class="viewForm">
-        Test
-    </div>
-
     {% if "views" in response %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
         <thead>
             <tr>
-              <th class="p-2 bg-white text-left" scope="col" colspan="11"><span class="align-middle pl-2">Default Views</span><a href="#" onclick="toggleForm(event, 'ViewForm');" style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add View</button></a></th>
+                <th class="p-2 bg-white text-left" scope="col" colspan="11"><span class="align-middle pl-2">Default
+                        Views</span></th>
             </tr>
             <tr class="text-center" style="background-color:#D6EAF8">
-                <th scope="col" colspan="2" style="width:10%">Action</th>
+                <!--<th scope="col" colspan="2" style="width:10%">Action</th>-->
                 <th scope="col">Label</th>
                 <th scope="col">Name</th>
                 <th scope="col">Group</th>
@@ -63,8 +224,8 @@
         <tbody>
             {% for item in response["views"] %}
             <tr style="background-color:#FFFFFF">
-                <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
-                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>
+                <!--<td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
+                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>-->
                 <td>{{item.view_label}}</td>
                 <td>{{item.view_name}}</td>
                 <td>{{item.view_group}}</td>
@@ -79,6 +240,6 @@
         </tbody>
     </table>
     {% endif %}
-
+    {% endif %}
 </div>
 {% endblock content %}

@@ -21,7 +21,7 @@
 			<div class="col p-0" style="background-color:#f5f8fe">
 				{% if request.path != '/login' and '/jobs' not in request.path  %}
 				<div class="container-fluid px-5">
-					<div class="d-flex flex-row bd-highlight pt-3 pb-3">
+					<div class="d-flex flex-row bd-highlight pt-3">
 						<div class="p-2 flex-grow-1 bd-highlight">
 							<form action="http://localhost:5000/search" method="POST" autocomplete="off">
 								<div class="input-group mb-3">
@@ -44,6 +44,7 @@
 					</div>
 				</div>
 				{% endif %}
+                <meta id="people-data" data-table="{{table}}" data-action="{{action}}" data-key="{{key}}">
 				{% block content %}
 				{% endblock content %}
 			</div>
