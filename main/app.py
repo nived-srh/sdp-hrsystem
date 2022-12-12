@@ -1,5 +1,6 @@
 from flask import Flask, request, session, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
+from datetime import date, timedelta
 from .config import AppConfig
 from .database import DatabaseConnect
 from .models import *
@@ -18,8 +19,13 @@ def home():
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    views = utils.fetchSidebarLinks(db, session['userSession'])    
-    return render_template("base.html", hasSidebar=True, views=views)
+
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+    
+    return render_template("base.html", response=response)
 
 @app.route("/login", methods=['GET','POST'])
 def login():
@@ -30,10 +36,9 @@ def login():
         
         result = users.Person().validatePerson(db, request.form['username'], request.form['password'] )
         returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args and request.args.get('returnUrl') != "/login"  else "/"
-        
         if result != None:
-            session['userSession'] = result.username
-            session['userId'] = result.id
+            activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
+            session['userSession'] = activeUser
             return redirect(returnUrl)
 
     return render_template("login.html")
@@ -55,29 +60,29 @@ def globalSearch():
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    views = utils.fetchSearchableViews(db, session['userSession'])    
+    
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
 
-    searchResults = {}
-    if "accounts" in views:
-        searchResults["accounts"] = None#accounts.Account().search(db, session['userSession'], views["accounts"])
-    elif "projects" in views:
-        searchResults["projects"] = None
-    elif "employee" in views:
-        searchResults["employee"] = None
-    elif "consultants" in views:
-        searchResults["consultants"] = None
-    elif "contractors" in views:
-        searchResults["contractors"] = None
-    elif "profiles" in views:
-        searchResults["profiles"] = None
-    elif "views" in views:
-        searchResults["views"] = None
+    response = {}
+    if "accounts" in response["views"] :
+        response["accounts"] = None#accounts.Account().search(db, session['userSession'], views["accounts"])
+    elif "projects" in response["views"] :
+        response["projects"] = None
+    elif "employee" in response["views"] :
+        response["employee"] = None
+    elif "consultants" in response["views"] :
+        response["consultants"] = None
+    elif "contractors" in response["views"] :
+        response["contractors"] = None
+    elif "profiles" in response["views"] :
+        response["profiles"] = None
+    elif "views" in response["views"] :
+        response["views"] = None
 
-    return jsonify({
-        "results " : [{
-            "id": row.view_name
-        } for row in views]
-    })
+    return render_template("search.html", response=response)
 
 @app.route("/jobs")
 @app.route("/jobs/myapplication")
@@ -85,17 +90,19 @@ def jobs():
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-
-    views = utils.fetchSidebarLinks(db, None)    
-    person = None
-
+    
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, None)    
+    response["hasSidebar"] = True
+    
     if request.path == "/jobs":
-        return render_template("jobs.html", hasSidebar=True, views=views)
+        return render_template("jobs.html", response=response)
     elif request.path == "/jobs/myapplication":
-        if 'userSession' not in session:        
-            return render_template("candidateApplications.html", hasSidebar=True, views=views, candidate=None)
-        else:
-            return render_template("candidateApplications.html", hasSidebar=True, views=views, candidate=session['userSession'])
+        if 'userSession' not in session:  
+            return render_template("candidateApplications.html", response=response)
+        else:              
+            response["userSession"] = session['userSession']
+            return render_template("candidateApplications.html", response=response)
         
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
@@ -106,16 +113,22 @@ def dailystatus():
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    views = utils.fetchSidebarLinks(db, session['userSession'])     
     response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
 
     if request.method == 'POST':
         formData = dict(request.form)
-        formData["employee_id"] = session['userId']
+        formData["employee_id"] = session['userSession']['id']
         new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
         response["messages"] = new_status
-    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session["userId"])    
-    return render_template("dailystatus.html", hasSidebar=True, views=views, response=response)       
+    else:        
+        formData = {}
+        formData["status_date"] = date.today()
+        response["formData"] = formData
+    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
+    return render_template("dailystatus.html", response=response)       
 
 @app.route("/vacation", methods=["GET", "POST"])
 def vacation():
@@ -126,19 +139,26 @@ def vacation():
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    views = utils.fetchSidebarLinks(db, session['userSession'])     
     response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
 
     if request.method == 'POST':
         formData = dict(request.form)
-        formData["employee_id"] = session['userId']
+        formData["employee_id"] =  session['userSession']['id']
         new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
         response["messages"] = new_status
-    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session["userId"])    
-    return render_template("vacation.html", hasSidebar=True, views=views, response=response)       
+    else:        
+        formData = {}
+        formData["vac_startdate"] = date.today()
+        formData["vac_enddate"] = date.today() + timedelta(days=1)
+        response["formData"] = formData
+    response["leaveHistory"] = services.DailyStatus().fetchDailyStatusByUsername(db,  session['userSession']['id'])    
+    return render_template("vacation.html", response=response)              
         
-@app.route("/people", defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
-@app.route("/people/<table>", defaults={'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/people",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/people/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/people/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/people/<table>/<action>/<key>", methods=['GET','POST'])
 def managePeople(table, action, key):
@@ -150,11 +170,16 @@ def managePeople(table, action, key):
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    views = utils.fetchSidebarLinks(db, session['userSession'])    
     response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+
     if request.args.get('msg') != None:
         response["messages"] = request.args.get('msg')
-
 
     if request.method == 'POST':
         if action == "create":
@@ -175,21 +200,34 @@ def managePeople(table, action, key):
                 formData["profile_id"] = consultant_profile[0].id
                 new_consultant = users.External().createExternalForm(db, formData)
                 response["messages"] = new_consultant
+            del formData["password"]
+            response["formData"] = formData
     
-    if key != None:
-        if action == "delete":
-            formData = dict(request.form)
-            response["messages"] = "INITIATED_DELETE"
+    if key != None:        
+        if action == "read":
+            queryParams = " person.id = '" + key + "' " 
+            response["profileDetails"] = access.Profile().fetchProfiles(db, queryParams=queryParams, queryLimit="1")
+            queryParams += " AND person.profile_id = profile.id" 
+            response["profileAssignments"] = access.Profile().fetchProfileAssignment(db, queryParams=queryParams)
+            response["profileAccess"] = access.ProfileAccess().fetchProfileAccessByProfile(db, key)
+            return render_template("access.html", response=response)    
         elif action == "edit":
             formData = dict(request.form)
-            response["messages"] = "INITIATED_UDPATE"                
-    else:
+            response["messages"] = "INITIATED_UDPATE" 
+        elif action == "delete":
+            formData = dict(request.form)
+            result = access.Profile().deleteProfiles(db, list(key))
+            if result == "SUCCESS":
+                return redirect("/access?msg=" + result)
+            else:
+                response["messages"] = result         
+    elif key == None and action != None and request.method == 'GET':
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"
 
     response["employees"] = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY id DESC")
     response["contractors"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
     response["consultants"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONSULTANT' ORDER BY id DESC")
-    return render_template("people.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
+    return render_template("people.html", response=response)   
     
 
 @app.route("/access",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -204,8 +242,14 @@ def manageAccess(table, action, key):
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    views = utils.fetchSidebarLinks(db, session['userSession'])    
     response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+
     if request.args.get('msg') != None:
         response["messages"] = request.args.get('msg')
 
@@ -224,7 +268,7 @@ def manageAccess(table, action, key):
             queryParams += " AND person.profile_id = profile.id" 
             response["profileAssignments"] = access.Profile().fetchProfileAssignment(db, queryParams=queryParams)
             response["profileAccess"] = access.ProfileAccess().fetchProfileAccessByProfile(db, key)
-            return render_template("access.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
+            return render_template("access.html", response=response)    
         elif action == "edit":
             pass
         elif action == "delete":
@@ -237,8 +281,8 @@ def manageAccess(table, action, key):
     elif key == None and table != None and request.method == 'GET':
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"
     response["profiles"] = access.Profile().fetchProfilesWithPersonCount(db)
-    response["views"] = access.View().fetchViews(db)
-    return render_template("access.html", hasSidebar=True, table=table, action=action, key=key, views=views, response=response)   
+    response["defaultviews"] = access.View().fetchViews(db)
+    return render_template("access.html", response=response)   
 
 @app.route("/fetchData/<table>", defaults={'limit': 10})
 @app.route("/fetchData/<table>/<limit>")   
@@ -254,7 +298,7 @@ def fetchData(table, limit):
             "profile_name" : row.profile_name    
         } for row in results]
     elif table == "views":
-        results = access.ProfileAccess().fetchProfileAccessByUsername(db, session['userSession'])
+        results = access.ProfileAccess().fetchProfileAccessByUsername(db, session['userSession']["username"])
         response = [{
             "id": row.view_name , 
             "profile_name" : row.allow_read    
@@ -303,8 +347,10 @@ def page_not_found(e):
         if db == None:
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-        views = utils.fetchSidebarLinks(db, session['userSession'])    
-        return render_template('404.html', hasSidebar=True, views=views)
+        response = {}
+        response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+        response["hasSidebar"] = True 
+        return render_template('404.html', response=response)
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -12,7 +12,7 @@
 <body>
 	<div class="container-fluid">
 		<div class="row" style="min-height:100vh;">
-			{% if hasSidebar %}
+			{% if "hasSidebar" in response %}
 			<div class="col-sm-2 border-end border-2 p-0"
 				style="background-color:#ffffff;max-width:320px;min-width:320px;">
 				{% include 'sidebar.html' %}
@@ -44,7 +44,7 @@
 					</div>
 				</div>
 				{% endif %}
-                <meta id="people-data" data-table="{{table}}" data-action="{{action}}" data-key="{{key}}">
+                <meta id="people-data" data-table="{{ response['table']}}" data-action="{{ response['action']}}" data-key="{{ response['key']}}">
 				{% block content %}
 				{% endblock content %}
 			</div>

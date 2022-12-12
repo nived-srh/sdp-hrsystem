@@ -19,6 +19,17 @@
 				onclick="toggleTab(event, 'Contractors')">Contractors</a>
 		</li>
 	</ul>
+    {% if "messages" in response %}
+    {% if "ERROR" in response["messages"] %}
+    <div class="alert alert-warning" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% else %}
+    <div class="alert alert-success" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% endif %}
+    {% endif %}
 	<div id="Employees" class="tabcontent">
 		<div class="d-flex flex-column bd-highlight">
 			<div class="pt-2 bd-highlight">

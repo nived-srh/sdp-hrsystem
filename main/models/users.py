@@ -38,9 +38,11 @@ class Person(base.Model):
                     if check_password_hash(row.hashed_password,password):
                         return row
                     else:
-                        return None
+                        return "ERROR_INVALID_CREDENTIALS"
+            else: 
+                return "ERROR_USER_NOT_FOUND"
         except Exception as err:
-            return None
+            return "ERROR"
 
     def fetchPersons(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('person', queryFields, queryParams, queryLimit)
@@ -51,7 +53,7 @@ class Person(base.Model):
                 params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-        return self.fetchPersons(db, 'id, email, hashed_password, username', params, None) 
+        return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params, None) 
 
     ''' Methods overrode by child insert methods
     def createPersonForm(self, db, formData):

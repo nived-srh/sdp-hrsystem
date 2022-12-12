@@ -5,16 +5,15 @@
     </div>
   </div>
   <div class="bd-highlight pt-3 text-danger px-5" style="height:80vh;width:100%;">
-
-    {% for item in views %}
-
+    {% if "views" in response %}
+    {% for item in response["views"] %}
     {% if item != "DEFAULT" and item != "PUBLIC" and item != "CANDIDATE" %}    
       <div class="d-flex sidebarLinkHeader">
         {{item}}
       </div>
     {% endif %}
 
-    {% for view in views[item] %}
+    {% for view in response["views"][item] %}
     {% if view.view_tab or "jobs" in request.path %}
     <a style="text-decoration: none;" href="{{view.view_url}}">
       <div class="d-flex align-items-start flex-column bd-highlight sidebarLinks">
@@ -33,5 +32,6 @@
       <i class="fa-solid fa-arrow-right-from-bracket mr-3 fa-flip-horizontal"></i>Logout
     </a>
   </div>
+  {% endif %}
   {% endif %}
 </div>

@@ -28,24 +28,24 @@
                                     <div class="col-xs-2 flex-grow-1 ">
                                         <label for="status_project">Project</label>
                                         <input type="text" class="form-control" id="status_project" name="status_project"
-                                            value="{{request.form['status_project']}}">
+                                            value="{{response['formData']['status_project']}}">
                                     </div>
                                     <div class="col-xs-4 ml-4">
                                         <label for="status_date">Date</label>
                                         <input type="date" class="form-control" id="status_date"
-                                            name="status_date" value="{{request.form['status_date']}}">
+                                            name="status_date" value="{{response['formData']['status_date']}}">
                                     </div>
                                     <div class="col-xs-4 ml-4">
                                         <label for="work_hours">Hours Worked</label>
                                         <input type="number" class="form-control" id="work_hours" name="work_hours"
-                                            value="{{request.form['work_hours']}}">
+                                            value="{{response['formData']['work_hours']}}">
                                     </div>
                                 </div>
 								<div class="form-group d-flex flex-row justify-content-between mb-2">
 									<div class="col-xs-3 flex-grow-1">
 										<label for="status_descr">Description</label>
 										<textarea class="form-control" id="status_descr" name="status_descr" type="textarea"
-											value="{{request.form['status_descr']}}" rows="3"></textarea>
+											value="{{response['formData']['status_descr']}}" rows="3"></textarea>
 									</div>
 								</div>
                             </div>

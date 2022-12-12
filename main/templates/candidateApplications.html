@@ -1,7 +1,7 @@
 {% extends "main.html" %}
 
 {% block content %}
-    {% if candidate == None %}
+    {% if "userSession" in reponse  %}
         {% include 'login-form.html' %}
     {% else %}
     Test

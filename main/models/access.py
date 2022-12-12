@@ -23,8 +23,8 @@ class Profile(base.Model):
         self.__init__(formData)
         return self.createProfile(db)
 
-    def createProfileWithAccess(self, db, viewList, formData):
-        self.profile_name = formData["profile_name"]
+    def createProfileWithAccess(self, db, viewList, formData):        
+        self.__init__(formData)
         response = self.createProfile(db)
         if response == "INSERTED_PROFILE":
             session = db.initiateSession()
@@ -49,7 +49,7 @@ class Profile(base.Model):
                         formData["inherit_view_allow_create"] = item.allow_create_default
                         formData["inherit_view_allow_edit"] = item.allow_edit_default
                         formData["inherit_view_allow_delete"] = item.allow_delete_default
-                        pfa = ProfileAccess(profile=self, view=None, formData=formData)
+                        pfa = ProfileAccess(self, view=None, formData=formData)
                         session.add(pfa)
                     commitStatus = db.commitSession(session)
                     if commitStatus == "SUCCESS":
@@ -106,22 +106,24 @@ class ProfileAccess(base.Model):
     view = relationship("View", back_populates="children")
 
     def __init__(self, profile = None, view = None, formData = None):
-        if view != None and profile != None:             
-            self.view = view if view is not None else None
+        if view != None:
+            self.view = view if view is not None else None        
+        if profile != None:             
             self.profile = profile if profile is not None else None
         if formData != None:
-            if "inherit_view" in formData:
-                self.view_id = formData["inherit_view_id"]
-                self.allow_read = formData["inherit_view_allow_read"]
-                self.allow_create =  formData["inherit_view_allow_create"]
-                self.allow_edit =  formData["inherit_view_allow_edit"]
-                self.allow_delete =  formData["inherit_view_allow_delete"]
+            print(formData)
 
             if "profile_fullaccess" in formData:
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
+            elif "inherit_view_id" in formData:
+                self.view_id = formData["inherit_view_id"]
+                self.allow_read = formData["inherit_view_allow_read"]
+                self.allow_create =  formData["inherit_view_allow_create"]
+                self.allow_edit =  formData["inherit_view_allow_edit"]
+                self.allow_delete =  formData["inherit_view_allow_delete"]
             else:
                 self.allow_read = False
                 self.allow_create = False

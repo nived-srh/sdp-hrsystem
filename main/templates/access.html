@@ -155,7 +155,7 @@
                                     style="float:right;"><button class="btn btn-outline-danger"
                                         type="button">Cancel</button></a>
                             </div>
-                            <input type="hidden" id="profile_custom" name="profile_custom" value="TRUE" />
+                            <input type="hidden" id="profile_custom" name="profile_custom" value="true" />
                         </form>
                     </div>
                 </div>
@@ -201,7 +201,7 @@
     </table>
     {% endif %}
 
-    {% if "views" in response %}
+    {% if "defaultviews" in response %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
         <thead>
             <tr>
@@ -222,7 +222,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in response["views"] %}
+            {% for item in response["defaultviews"] %}
             <tr style="background-color:#FFFFFF">
                 <!--<td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
                 <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>-->
