@@ -33,6 +33,7 @@ def login():
         
         if result != None:
             session['userSession'] = result.username
+            session['userId'] = result.id
             return redirect(returnUrl)
 
     return render_template("login.html")
@@ -96,6 +97,26 @@ def jobs():
         else:
             return render_template("candidateApplications.html", hasSidebar=True, views=views, candidate=session['userSession'])
         
+@app.route("/dailystatus", methods=["GET", "POST"])
+def dailystatus():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+        
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    views = utils.fetchSidebarLinks(db, session['userSession'])     
+    response = {}
+
+    if request.method == 'POST':
+        formData = dict(request.form)
+        formData["employee_id"] = session['userId']
+        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
+        response["messages"] = new_status
+    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session["userId"])    
+    return render_template("dailystatus.html", hasSidebar=True, views=views, response=response)       
+        
 @app.route("/people", defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/people/<table>", defaults={'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/people/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
@@ -111,6 +132,9 @@ def managePeople(table, action, key):
 
     views = utils.fetchSidebarLinks(db, session['userSession'])    
     response = {}
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
 
     if request.method == 'POST':
         if action == "create":

@@ -51,7 +51,7 @@ class Person(base.Model):
                 params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-        return self.fetchPersons(db, 'email, hashed_password, username', params, None) 
+        return self.fetchPersons(db, 'id, email, hashed_password, username', params, None) 
 
     ''' Methods overrode by child insert methods
     def createPersonForm(self, db, formData):
