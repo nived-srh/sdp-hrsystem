@@ -116,6 +116,26 @@ def dailystatus():
         response["messages"] = new_status
     response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session["userId"])    
     return render_template("dailystatus.html", hasSidebar=True, views=views, response=response)       
+
+@app.route("/vacation", methods=["GET", "POST"])
+def vacation():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+        
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    views = utils.fetchSidebarLinks(db, session['userSession'])     
+    response = {}
+
+    if request.method == 'POST':
+        formData = dict(request.form)
+        formData["employee_id"] = session['userId']
+        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
+        response["messages"] = new_status
+    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session["userId"])    
+    return render_template("vacation.html", hasSidebar=True, views=views, response=response)       
         
 @app.route("/people", defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/people/<table>", defaults={'action' : "read", 'key': None }, methods=['GET'])
@@ -192,11 +212,8 @@ def manageAccess(table, action, key):
     if request.method == 'POST':
         if action == "create":
             formData = dict(request.form)
-            if table == "profiles" and request.form.get("profile_fullaccess") == None: 
-                new_profile = access.Profile().createProfileForm(db, formData)
-                response["messages"] = new_profile
-            elif  table == "profiles" and request.form.get("profile_fullaccess") != None:                
-                new_profile = access.Profile().createProfileWithAccess(db, formData)
+            if table == "profiles":                
+                new_profile = access.Profile().createProfileWithAccess(db, None, formData)
                 response["messages"] = new_profile
             if "ERROR" not in response["messages"]:
                 return redirect("/access?msg=" + response["messages"])

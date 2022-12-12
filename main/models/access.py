@@ -28,17 +28,36 @@ class Profile(base.Model):
         response = self.createProfile(db)
         if response == "INSERTED_PROFILE":
             session = db.initiateSession()
-            try:
-                for item in viewList:
-                    pfa = ProfileAccess(self, item, formData)
-                    session.add(pfa)
-                commitStatus = db.commitSession(session)
-                if commitStatus == "SUCCESS":
-                    return "INSERTED_PROFILE_WITH_ACCESS"
-                else:
-                    return "ERROR_" + commitStatus
-            except Exception as err:
-                return "ERROR_INS_PROFILE_WITH_ACCESS"
+            if viewList != None:
+                try:
+                    for item in viewList:
+                        pfa = ProfileAccess(self, item, formData)
+                        session.add(pfa)
+                    commitStatus = db.commitSession(session)
+                    if commitStatus == "SUCCESS":
+                        return "INSERTED_PROFILE_WITH_ACCESS"
+                    else:
+                        return "ERROR_" + commitStatus
+                except Exception as err:
+                    return "ERROR_INS_PROFILE_WITH_ACCESS"
+            else:
+                viewList = View().fetchViews(db)
+                try:
+                    for item in viewList:
+                        formData["inherit_view_id"] = item.id
+                        formData["inherit_view_allow_read"] = item.allow_read_default
+                        formData["inherit_view_allow_create"] = item.allow_create_default
+                        formData["inherit_view_allow_edit"] = item.allow_edit_default
+                        formData["inherit_view_allow_delete"] = item.allow_delete_default
+                        pfa = ProfileAccess(profile=self, view=None, formData=formData)
+                        session.add(pfa)
+                    commitStatus = db.commitSession(session)
+                    if commitStatus == "SUCCESS":
+                        return "INSERTED_PROFILE_WITH_ACCESS"
+                    else:
+                        return "ERROR_" + commitStatus
+                except Exception as err:
+                    return "ERROR_INS_PROFILE_WITH_ACCESS"
         else:
             return response
 
@@ -87,16 +106,24 @@ class ProfileAccess(base.Model):
     view = relationship("View", back_populates="children")
 
     def __init__(self, profile = None, view = None, formData = None):
-        if view != None and profile != None and formData != None:
+        if view != None and profile != None:             
             self.view = view if view is not None else None
             self.profile = profile if profile is not None else None
+        if formData != None:
+            if "inherit_view" in formData:
+                self.view_id = formData["inherit_view_id"]
+                self.allow_read = formData["inherit_view_allow_read"]
+                self.allow_create =  formData["inherit_view_allow_create"]
+                self.allow_edit =  formData["inherit_view_allow_edit"]
+                self.allow_delete =  formData["inherit_view_allow_delete"]
+
             if "profile_fullaccess" in formData:
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
             else:
-                self.allow_read = True
+                self.allow_read = False
                 self.allow_create = False
                 self.allow_edit = False
                 self.allow_delete = False
