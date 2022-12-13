@@ -28,13 +28,23 @@ $( document ).ready(function() {
             }
         }else if(people_data.table == "employees"){
             document.getElementById("manageEmployees").click();
-            if(people_data.action == "create"){
+            if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('EmployeeForm');
                 fetchData('profiles','#employee_profile_id');
             }
         }else if(people_data.table == "profiles"){
-            if(people_data.action == "create"){
+            if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('ProfileForm');
+            }
+        }else if(people_data.table == "joblisting"){
+            document.getElementById("manageJobListing").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('JobListing');
+            }
+        }else if(people_data.table == "details"){
+            document.getElementById("managePayroll").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('Payroll');
             }
         }
     }

@@ -2,14 +2,26 @@
 
 {% block content %}
 <div class="container-fluid px-5">
-    <p><h1 class="mb-4">Manage Access</h1>
-    {% if key != None and action == "read" %}
+    <p>
+    <h1 class="mb-4">Manage Access</h1>
+    {% if "messages" in response %}
+    {% if "ERROR" in response["messages"] %}
+    <div class="alert alert-warning" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% else %}
+    <div class="alert alert-success" role="alert">
+        {{ response["messages"] }}
+    </div>
+    {% endif %}
+    {% endif %}
+    {% if response["key"] != None and response["action"] == "read" %}
     {% if response["profileDetails"].rowcount > 0 %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
         <thead>
             <tr>
-                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span
-                        class="align-middle pl-2">Profile Detail</span></th>
+                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span class="align-middle pl-2">Profile
+                        Detail</span></th>
             </tr>
             <tr class="text-center" style="background-color:#D6EAF8">
                 <th scope="col">Name</th>
@@ -32,8 +44,8 @@
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
         <thead>
             <tr>
-                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span
-                        class="align-middle pl-2">Assigned Users</span></th>
+                <th class="p-2 bg-white text-left " scope="col" colspan="6"><span class="align-middle pl-2">Assigned
+                        Users</span></th>
             </tr>
             <tr class="text-center" style="background-color:#D6EAF8">
                 <th scope="col">Last Name</th>
@@ -58,45 +70,54 @@
     {% endif %}
     {% if response["profileAccess"].rowcount > 0 %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center">
-        <thead>
-            <tr>
-                <th class="p-2 bg-white text-left " scope="col" colspan="12"><span
-                        class="align-middle pl-2">Profile Access Details</span></th>
-            </tr>
-            <tr class="text-center" style="background-color:#D6EAF8">
-                <th scope="col" colspan="2" style="width:10%">Action</th>
-                <th scope="col">View Label</th>
-                <th scope="col">View Name</th>
-                <th scope="col">View Group</th>
-                <th scope="col">View URL</th>
-                <th scope="col">View Tab</th>
-                <th scope="col">View Icon</th>
-                <th scope="col">Allow Read</th>
-                <th scope="col">Allow Create</th>
-                <th scope="col">Allow Edit</th>
-                <th scope="col">Allow Delete</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in response["profileAccess"] %}
-            <tr style="background-color:#FEFEFE">
-                <td class="text-center"><a href="/access/profileaccess/edit/{{item.id}}"><i
+        <form action="/access/profileaccess/edit" method="POST" autocomplete="off">
+            <thead>
+                <tr>
+                    <th class="p-2 bg-white text-left " scope="col" colspan="12">
+                        <span class="align-middle pl-2">Profile</span>
+                        <button type="submit" style="float:right;" class="btn btn-outline-primary btn-sm" type="button">Save</button>
+                    </th>
+                </tr>
+                <tr class="text-center" style="background-color:#D6EAF8">
+                    <!--<th scope="col" colspan="2" style="width:10%">Action</th>-->
+                    <th scope="col">View Label</th>
+                    <th scope="col">View Name</th>
+                    <th scope="col">View Group</th>
+                    <th scope="col">View URL</th>
+                    <th scope="col">View Tab</th>
+                    <th scope="col">View Icon</th>
+                    <th scope="col">Allow Read</th>
+                    <th scope="col">Allow Create</th>
+                    <th scope="col">Allow Edit</th>
+                    <th scope="col">Allow Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in response["profileAccess"] %}
+                <tr style="background-color:#FEFEFE">
+                    <!--<td class="text-center"><a href="/access/profileaccess/edit/{{item.id}}"><i
                             class="fa-solid fa-edit fa-flip-horizontal "></i></a></td>
                 <td class="text-center"><a href="/access/profileaccess/delete/{{item.id}}"><i
-                            class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>                
-                <td>{{item.view_label}}</td>
-                <td>{{item.view_name}}</td>
-                <td>{{item.view_group}}</td>
-                <td>{{item.view_url}}</td>
-                <td>{{item.view_tab}}</td>
-                <td>{{item.view_icon}}</td>
-                <td>{{item.allow_read}}</td>
-                <td>{{item.allow_create}}</td>
-                <td>{{item.allow_edit}}</td>
-                <td>{{item.allow_delete}}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+                            class="fa-solid fa-trash fa-flip-horizontal"></i></a></td>-->
+                    <td>{{item.view_label}}</td>
+                    <td>{{item.view_name}}</td>
+                    <td>{{item.view_group}}</td>
+                    <td>{{item.view_url}}</td>
+                    <td>{{item.view_tab}}</td>
+                    <td><i class="pt-1 mr-4 {{item.view_icon}}" style="max-width:5px;"></i></td>
+                    <td><input type="checkbox" class="form-check-input" id="allow_read" name="{{item.id}}_read"
+                            {{ "checked" if item.allow_read else "" }}></td>
+                    <td><input type="checkbox" class="form-check-input" id="allow_create" name="{{item.id}}_create"
+                            {{ "checked" if item.allow_create else "" }}></td>
+                    <td><input type="checkbox" class="form-check-input" id="allow_edit" name="{{item.id}}_edit"
+                            {{ "checked" if item.allow_edit else "" }}></td>
+                    <td><input type="checkbox" class="form-check-input" id="allow_delete" name="{{item.id}}_delete"
+                            {{ "checked" if item.allow_delete else "" }}></td>
+                </tr>
+                {% endfor %}
+            </tbody>            
+            <input type="hidden" id="profile_id" name="profile_id" value="{{response['key']}}" />
+        </form>
     </table>
     {% else %}
     <div class="alert alert-warning" role="alert">
@@ -104,24 +125,14 @@
     </div>
     {% endif %}
     {% else %}
-    {% if "messages" in response %}
-    {% if "ERROR" in response["messages"] %}
-    <div class="alert alert-warning" role="alert">
-        {{ response["messages"] }}
-    </div>
-    {% else %}
-    <div class="alert alert-success" role="alert">
-        {{ response["messages"] }}
-    </div>
-    {% endif %}
-    {% endif %}
+    
     <div id="Profiles">
         <div class="d-flex flex-column bd-highlight">
             <div class="bd-highlight">
                 <div id="ProfileForm" class="ProfileForm">
                     <div class="card containter-fluid mb-3">
                         <div class="card-header">
-                            Add Profile
+                            {{ response["action"]|title }} Profile
                         </div>
                         <form action="/access/profiles/create" method="POST" autocomplete="off">
                             <div class="card-body">
@@ -129,28 +140,35 @@
                                     <div class="col-xs-2">
                                         <label for="first_name">Profile Name</label>
                                         <input type="text" class="form-control" id="profile_name" name="profile_name"
-                                            type="text" value="{{request.form['profile_name']}}">
+                                            type="text" value="{{response['formData']['profile_name']}}">
                                     </div>
                                     <div class="col-xs-4 flex-grow-1 ml-4">
                                         <label for="profile_descr">Profile Description</label>
                                         <input type="text" class="form-control" id="profile_descr" name="profile_descr"
-                                            type="text" value="{{request.form['profile_descr']}}">
+                                            type="text" value="{{response['formData']['profile_descr']}}">
+                                    </div>
+                                    <div class="col-xs-4 ml-4">
+                                        <label for="profile_readonlyaccess">Read Only Access</label>
+                                        <input type="checkbox" class="form-control" id="profile_readonlyaccess"
+                                            name="profile_readonlyaccess"
+                                            value="{{response['formData']['profile_readonlyaccess']}}" unchecked>
                                     </div>
                                     <div class="col-xs-4 ml-4">
                                         <label for="profile_fullaccess">Full Access</label>
                                         <input type="checkbox" class="form-control" id="profile_fullaccess"
-                                            name="profile_fullaccess" value="{{request.form['profile_fullaccess']}}"
-                                            unchecked>
+                                            name="profile_fullaccess"
+                                            value="{{response['formData']['profile_fullaccess']}}" unchecked>
                                     </div>
                                     <div class="col-xs-4 ml-4">
                                         <label for="profile_active">Active</label>
                                         <input type="checkbox" class="form-control" id="profile_active"
-                                            name="profile_active" value="{{request.form['profile_active']}}" checked>
+                                            name="profile_active" value="{{response['formData']['profile_active']}}"
+                                            {{ "checked" if response['formData']["profile_active"] else "" }}>
                                     </div>
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary">Create Profile</button>
+                                <button type="submit" class="btn btn-primary">Submit</button>
                                 <a href="#" id="cancelProfileButton" onclick="toggleForm('ProfileForm');"
                                     style="float:right;"><button class="btn btn-outline-danger"
                                         type="button">Cancel</button></a>

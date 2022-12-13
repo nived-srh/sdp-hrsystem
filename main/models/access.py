@@ -90,7 +90,7 @@ class Profile(base.Model):
         return db.fetchData('profile, person', 'person.id, person.email, person.first_name, person.last_name', queryParams, queryLimit)
 
     def deleteProfiles(self, db, recordIds):
-        queryParams = "id IN (" + ','.join([ '\'' + usr + '\'' for usr in recordIds]) + ") AND profile_custom = true"
+        queryParams = "id IN (" + ','.join([ '\'' + prfid + '\'' for prfid in recordIds]) + ") AND profile_custom = true"
         return db.deleteData('profile', queryParams)
 
 class ProfileAccess(base.Model):
@@ -100,8 +100,8 @@ class ProfileAccess(base.Model):
     allow_create = Column(Boolean, default=False)
     allow_edit = Column(Boolean, default=False)
     allow_delete = Column(Boolean, default=False)
-    profile_id = Column(Integer, ForeignKey("profile.id"))
-    view_id = Column(Integer, ForeignKey("view.id"))
+    profile_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
+    view_id = Column(Integer, ForeignKey("view.id", ondelete="CASCADE"))
     profile = relationship("Profile", back_populates="children")
     view = relationship("View", back_populates="children")
 
@@ -112,14 +112,18 @@ class ProfileAccess(base.Model):
             self.profile = profile if profile is not None else None
         if formData != None:
             print(formData)
-
+            self.view_id = formData["inherit_view_id"] if "inherit_view_id" in formData else None
             if "profile_fullaccess" in formData:
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
+            elif "profile_readonlyaccess" in formData:
+                self.allow_read = True
+                self.allow_create = False
+                self.allow_edit = False
+                self.allow_delete = False
             elif "inherit_view_id" in formData:
-                self.view_id = formData["inherit_view_id"]
                 self.allow_read = formData["inherit_view_allow_read"]
                 self.allow_create =  formData["inherit_view_allow_create"]
                 self.allow_edit =  formData["inherit_view_allow_edit"]
@@ -169,6 +173,29 @@ class ProfileAccess(base.Model):
         if onlyTables:
             queryParams += ' AND view.view_type = \'TABLE\' '
         return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
+
+    def bulkEditProfileAccessForm(self, db, pfaList):
+        itemsToUpdate = {}
+        for key, value in pfaList.items():
+            pfa = key.split('_')
+            if pfa[0] not in itemsToUpdate:
+                itemsToUpdate[pfa[0]] = ProfileAccess()
+                itemsToUpdate[pfa[0]].id = pfa[0]
+            if pfa[1] == "read":
+                itemsToUpdate[pfa[0]].allow_read = value
+            elif pfa[1] == "create":
+                itemsToUpdate[pfa[0]].allow_create = value
+            elif pfa[1] == "edit":
+                itemsToUpdate[pfa[0]].allow_edit = value
+            elif pfa[1] == "delete":
+                itemsToUpdate[pfa[0]].allow_delete = value
+
+        session = db.initiateSession()
+        for row in itemsToUpdate.values():
+            session.update(row)
+        commitstatus = db.commitSession(session)
+        return commitstatus
+
 
 class View(base.Model):
     __tablename__ = 'view'

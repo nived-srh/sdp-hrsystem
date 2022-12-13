@@ -42,7 +42,7 @@
 				<div id="EmployeeForm" class="EmployeeForm">
 					<div class="card containter-fluid mb-3">
 						<div class="card-header">
-							Add Employee
+							{{ response["action"]|title }} Employee
 						</div>
 						<form action="/people/employees/create" method="POST" autocomplete="off">
 							<div class="card-body">
@@ -58,26 +58,26 @@
 									<div class="col-xs-3 flex-grow-1 ml-4">
 										<label for="first_name">First Name</label>
 										<input type="text" class="form-control" id="first_name" name="first_name"
-											type="text" value="{{request.form['first_name']}}">
+											type="text" value="{{response['formData']['first_name']}}">
 									</div>
 									<div class="col-xs-4 flex-grow-1 ml-4">
 										<label for="last_name">Last Name</label>
 										<input type="text" class="form-control" id="last_name" name="last_name"
-											type="text" value="{{request.form['last_name']}}">
+											type="text" value="{{response['formData']['last_name']}}">
 									</div>
 								</div>
 								<div class="form-group d-flex flex-row justify-content-between mb-2">
 									<div class="col-xs-3 flex-grow-1 mr-4">
 										<label for="email">Email Address</label>
 										<input class="form-control" id="email" name="email" type="text"
-											value="{{request.form['email']}}">
+											value="{{response['formData']['email']}}">
 									</div>
 									<div class="col-xs-3">
 										<label for="validationCustomUsername">Username</label>
 										<div class="input-group">
 											<span class="input-group-text" id="inputGroupPrepend">@</span>
 											<input type="text" class="form-control" id="username" name="username"
-												value="{{request.form['username']}}">
+												value="{{response['formData']['username']}}">
 										</div>
 									</div>
 								</div>
@@ -87,7 +87,7 @@
 										<div class="input-group">
 											<input type="text" class="form-control" id="phone_number"
 												name="phone_number" aria-describedby="inputGroupPrepend"
-												value="{{request.form['phone_number']}}">
+												value="{{response['formData']['phone_number']}}">
 										</div>
 									</div>
 									<div class="col-xs-3 flex-grow-1 mr-4">
@@ -100,17 +100,17 @@
 										<div class="input-group">
 											<input type="text" class="form-control" id="user_role" name="user_role"
 												aria-describedby="inputGroupPrepend"
-												value="{{request.form['user_role']}}">
+												value="{{response['formData']['user_role']}}">
 										</div>
 									</div>
 								</div>
 								<div class="form-group d-flex flex-row justify-content-between mb-2">
-									<div class="col-xs-3 flex-grow-1 mr-4">
+									<div class="col-xs-3 flex-grow-1">
 										<label for="validationCustomUsername">Address Line</label>
 										<div class="input-group">
 											<input type="text" class="form-control" id="addr_line" name="addr_line"
 												aria-describedby="inputGroupPrepend"
-												value="{{request.form['addr_line']}}">
+												value="{{response['formData']['addr_line']}}">
 										</div>
 									</div>
 								</div>
@@ -120,7 +120,7 @@
 										<div class="input-group">
 											<input type="text" class="form-control" id="addr_city" name="addr_city"
 												aria-describedby="inputGroupPrepend"
-												value="{{request.form['addr_city']}}">
+												value="{{response['formData']['addr_city']}}">
 										</div>
 									</div>
 									<div class="col-xs-3 flex-grow-1 mr-4">
@@ -128,7 +128,7 @@
 										<div class="input-group">
 											<input type="text" class="form-control" id="addr_county" name="addr_county"
 												aria-describedby="inputGroupPrepend"
-												value="{{request.form['addr_county']}}">
+												value="{{response['formData']['addr_county']}}">
 										</div>
 									</div>
 									<div class="col-xs-3">
@@ -136,13 +136,13 @@
 										<div class="input-group">
 											<input type="text" class="form-control" id="addr_zip" name="addr_zip"
 												aria-describedby="inputGroupPrepend"
-												value="{{request.form['addr_zip']}}">
+												value="{{response['formData']['addr_zip']}}">
 										</div>
 									</div>
 								</div>
 							</div>
 							<div class="card-footer">
-								<button type="submit" class="btn btn-primary">Create Employee</button>
+								<button type="submit" class="btn btn-primary">Submit</button>
 								<a href="#" id="cancelEmployeeButton" onclick="toggleForm('EmployeeForm');"
 									style="float:right;"><button class="btn btn-outline-danger"
 										type="button">Cancel</button></a>
@@ -168,9 +168,9 @@
 			<tbody>
 				{% for item in response["employees"] %}
 				<tr>
-					<td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+					<td class="text-center"><a href="/people/employees/edit/{{item.id}}">Edit</a>
 					</td>
-					<td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a>
+					<td class="text-center"><a href="#delete">Deactivate</a>
 					</td>
 					<td>{{item.username}}</td>
 					<td>{{item.first_name}}</td>

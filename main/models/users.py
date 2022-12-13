@@ -47,13 +47,24 @@ class Person(base.Model):
     def fetchPersons(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('person', queryFields, queryParams, queryLimit)
 
+    def fetchByUserId(self, db, userIds = []):
+        if userIds != [] and userIds != None:
+            if isinstance(userIds, str):   
+                params = 'id IN \'' + userIds + '\'' 
+            elif isinstance(userIds, list):
+                params = 'id IN (' + ','.join([ '\'' + usr + '\'' for usr in userIds]) + ')' 
+            params += ' AND person.profile_id = profile.id' 
+            return db.fetchData('person, profile', 'person.id, email, username, first_name, last_name, profile.profile_name', params, None) 
+        return "ERROR_MISSING_USERIDS"
+
     def fetchByUsername(self, db, usernames = []):
         if usernames != [] and usernames != None:
             if isinstance(usernames, str):   
                 params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-        return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params, None) 
+            return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params, None) 
+        return "ERROR_MISSING_USERNAMES"
 
     ''' Methods overrode by child insert methods
     def createPersonForm(self, db, formData):
@@ -112,7 +123,9 @@ class Employee(Person):
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
             return "ERROR"
-        
+    
+    def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
 
 class External(Person):
     __mapper_args__ = {'polymorphic_identity': 'external'}

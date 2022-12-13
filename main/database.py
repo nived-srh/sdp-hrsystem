@@ -48,7 +48,8 @@ class DatabaseConnect():
             commitStatus = "SUCCESS"
         except Exception as err:
             session.rollback()
-            commitStatus = "ROLLBACK_" + err
+            print(err)
+            commitStatus = "ERROR_ROLLBACK" 
         finally: 
             if autoClose:
                 self.closeSession(session)  
@@ -74,7 +75,7 @@ class DatabaseConnect():
             sql = "DELETE FROM " + queryTable
             if queryParams != None:
                 sql += " WHERE " + queryParams
-            self.executeQuery(sql, autoCommit = True)
+            rs = self.executeQuery(sql, autoCommit = True)
             return "DELETE_SUCCESS"        
         else:
             return "TABLE_NOT_SPECIFIED" 
