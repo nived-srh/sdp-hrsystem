@@ -158,7 +158,7 @@ class ProfileAccess(base.Model):
         return db.fetchData('profileaccess', queryFields, queryParams, queryLimit)
 
     def fetchProfileAccessByProfile(self, db, profileId):
-        queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id =  \'' + profileId + '\''
+        queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id =  \'' + profileId + '\' ORDER BY id ASC'
         queryFields = 'profileaccess.id, view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete'         
         return db.fetchData('profileaccess, view', queryFields, queryParams, None)
 
@@ -191,22 +191,17 @@ class ProfileAccess(base.Model):
             elif pfa[1] == "delete":
                 pfaMap[pfa[0]]["allow_delete"] = True
 
-        return str(pfaMap)
-
+        session = db.initiateSession()
+        pfaToUpdate = {}
         for key, value in pfaMap.items():
-            pfa = ProfileAccess()
-            pfa.id = key
-            pfa.allow_read = value["allow_read"] if "allow_read" in value else False
-            pfa.allow_create = value["allow_create"] if "allow_create" in value else False
-            pfa.allow_edit = value["allow_edit"] if "allow_edit" in value else False
-            pfa.allow_delete = value["allow_delete"] if "allow_delete" in value else False
-            #session.add(pfa)
-            session.query(ProfileAccess).filter_by(id=pfa.id).update(value) 
-        session.flush()
-        commitstatus = db.commitSession(session)
-        return commitstatus
-
-
+            pfaToUpdate[key] = session.query(ProfileAccess).filter(ProfileAccess.id==key).first()
+            pfaToUpdate[key].allow_read = value["allow_read"] if "allow_read" in value else False
+            pfaToUpdate[key].allow_create = value["allow_create"] if "allow_create" in value else False
+            pfaToUpdate[key].allow_edit = value["allow_edit"] if "allow_edit" in value else False
+            pfaToUpdate[key].allow_delete = value["allow_delete"] if "allow_delete" in value else False
+        commitStatus = db.commitSession(session)
+        return str(commitStatus)
+        
 class View(base.Model):
     __tablename__ = 'view'
     id = Column(Integer, primary_key=True)
