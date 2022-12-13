@@ -37,7 +37,7 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="d-flex p-2 bd-highlight justify-content-end" style="min-width:200px;">
+                        <div class="d-flex p-2 bd-highlight justify-content-end" style="min-width:200px;line-height: 1.3;">
                             <div class="d-flex flex-row bd-highlight pr-2">
                                 <div class="flex-grow-1 bd-highlight text-right">
                                     {% if "userSession" in response %}
@@ -49,13 +49,13 @@
                                             {% endif %}
                                         </strong>
                                     </div>
-                                    <div style="color:black;font-size:12px;">{{ response['userSession']['last_name']}}
+                                    <div style="color:black;font-size:12px;">{{ response['userSession']['email']}}
                                     </div>
                                     {% endif %}
                                 </div>
                             </div>
-                            <img src="{{ url_for('static', filename='images/janedoe.jpeg') }}" alt="mdo" width="42"
-                                height="42" class="rounded-circle border border-secondary">
+                            <img src="{{ url_for('static', filename='images/janedoe.jpeg') }}" alt="mdo" width="40"
+                                height="40" class="rounded-circle border border-secondary">
                         </div>
                     </div>
                 </div>

@@ -172,27 +172,37 @@ class ProfileAccess(base.Model):
         
         if onlyTables:
             queryParams += ' AND view.view_type = \'TABLE\' '
+        queryParams += ' ORDER BY profileaccess.id ASC '
         return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
 
     def bulkEditProfileAccessForm(self, db, pfaList):
-        itemsToUpdate = {}
+        pfaMap = {}
         for key, value in pfaList.items():
             pfa = key.split('_')
-            if pfa[0] not in itemsToUpdate:
-                itemsToUpdate[pfa[0]] = ProfileAccess()
-                itemsToUpdate[pfa[0]].id = pfa[0]
-            if pfa[1] == "read":
-                itemsToUpdate[pfa[0]].allow_read = value
-            elif pfa[1] == "create":
-                itemsToUpdate[pfa[0]].allow_create = value
-            elif pfa[1] == "edit":
-                itemsToUpdate[pfa[0]].allow_edit = value
-            elif pfa[1] == "delete":
-                itemsToUpdate[pfa[0]].allow_delete = value
+            if pfa[0] not in pfaMap:
+                pfaMap[pfa[0]] = {}
 
-        session = db.initiateSession()
-        for row in itemsToUpdate.values():
-            session.update(row)
+            if pfa[1] == "read":
+                pfaMap[pfa[0]]["allow_read"] = True
+            elif pfa[1] == "create":
+                pfaMap[pfa[0]]["allow_create"] = True
+            elif pfa[1] == "edit":
+                pfaMap[pfa[0]]["allow_edit"] = True
+            elif pfa[1] == "delete":
+                pfaMap[pfa[0]]["allow_delete"] = True
+
+        return str(pfaMap)
+
+        for key, value in pfaMap.items():
+            pfa = ProfileAccess()
+            pfa.id = key
+            pfa.allow_read = value["allow_read"] if "allow_read" in value else False
+            pfa.allow_create = value["allow_create"] if "allow_create" in value else False
+            pfa.allow_edit = value["allow_edit"] if "allow_edit" in value else False
+            pfa.allow_delete = value["allow_delete"] if "allow_delete" in value else False
+            #session.add(pfa)
+            session.query(ProfileAccess).filter_by(id=pfa.id).update(value) 
+        session.flush()
         commitstatus = db.commitSession(session)
         return commitstatus
 

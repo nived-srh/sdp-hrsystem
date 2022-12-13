@@ -34,7 +34,7 @@ class DailyStatus(base.Model):
             else:
                 return "ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
 
     def fetchDailyStatusByUsername(self, db, userId):
         queryParams = " employee_id = '" + str(userId) + "' ORDER BY id DESC"
@@ -74,7 +74,7 @@ class Vacation(base.Model):
             else:
                 return "ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
 
     def fetchVacationByUsername(self, db, userId):
         queryParams = " employee_id = '" + str(userId) + "' ORDER BY id DESC"

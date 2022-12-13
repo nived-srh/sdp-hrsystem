@@ -36,7 +36,7 @@ class JobListing(base.Model):
             else:
                 return "ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
 
     def fetchJobListing(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('joblisting', queryFields, queryParams, queryLimit)

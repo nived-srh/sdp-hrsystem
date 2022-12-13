@@ -122,7 +122,7 @@ class Employee(Person):
             else:
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
     
     def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
@@ -160,8 +160,7 @@ class External(Person):
             else:
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
-            print('TEst' , err)
-            return "ERROR" 
+            return "ERROR : " + str(err) 
 
 class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
@@ -192,5 +191,5 @@ class Candidate(Person):
             else:
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
 

@@ -332,6 +332,7 @@ def manageAccess(table, action, key):
                 pass
             elif table == "profileaccess":
                 pfaList = dict(request.form)
+                del pfaList["profile_id"]
                 response["messages"] = access.ProfileAccess().bulkEditProfileAccessForm(db, pfaList)
                 return redirect("/access/profiles/read/" + request.form["profile_id"] + "?msg=" + response["messages"])
 
