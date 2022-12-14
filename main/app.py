@@ -19,10 +19,12 @@ def beforeRequest():
         if db == None:
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
         if 'userSession' in session:        
-            authView = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
+            hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
         else:
-            authView = utils.validateUserAccess(db, None, request.path) 
-        print(request.path, "Haroharoharahara" , authView)
+            hasViewAccess = utils.validateUserAccess(db, None, request.path) 
+        response = {}
+        if not hasViewAccess and request.path != "/page_not_found" and request.path != "/login" and request.path != "/logout":
+            return redirect(url_for('page_not_found'))
 
 @app.route("/")
 def home():
@@ -136,6 +138,32 @@ def jobs():
         else:              
             response["userSession"] = session['userSession']
             return render_template("myapplications.html", response=response)
+
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+        
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+
+    if request.method == 'POST':
+        formData = dict(request.form)
+        formData["employee_id"] = session['userSession']['id']
+        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
+        response["messages"] = new_status
+    else:        
+        formData = {}
+        formData["status_date"] = date.today()
+        response["formData"] = formData
+    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
+    return render_template("dailystatus.html", response=response)       
         
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
@@ -307,7 +335,6 @@ def managePeople(table, action, key):
         elif action == "edit":
             if table == "employees": 
                 result = users.Person().fetchByUserId(db, key)
-                print("HARAHARO", result)
                 if result != None:
                     for row in result:                
                         formData["first_name"] = row.first_name
@@ -457,7 +484,8 @@ def dropDB():
     return jsonify({ "result": "SUCCESS" })
 
 @app.errorhandler(404)
-def page_not_found(e):
+@app.route("/page_not_found")
+def page_not_found():
     if 'userSession' not in session:        
         return redirect(url_for('login'))
     else:
@@ -468,6 +496,7 @@ def page_not_found(e):
         response = {}
         response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
         response["hasSidebar"] = True 
+        response["userSession"] = session['userSession'] 
         return render_template('404.html', response=response)
 
 if __name__ == "__main__":
