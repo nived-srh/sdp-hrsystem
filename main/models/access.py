@@ -89,6 +89,15 @@ class Profile(base.Model):
     def fetchProfileAssignment(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('profile, person', 'person.id, person.email, person.first_name, person.last_name', queryParams, queryLimit)
 
+    def editProfileForm(self, db, formData):
+        session = db.initiateSession()
+        profileToEdit = session.query(Profile).filter(Profile.id==formData["profile_id"]).first()
+        profileToEdit.profile_name = formData["profile_name"] 
+        profileToEdit.profile_descr = formData["profile_descr"] 
+        profileToEdit.profile_active = True if "profile_active" in formData else False
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
     def deleteProfiles(self, db, recordIds):
         queryParams = "id IN (" + ','.join([ '\'' + prfid + '\'' for prfid in recordIds]) + ") AND profile_custom = true"
         return db.deleteData('profile', queryParams)
@@ -100,6 +109,7 @@ class ProfileAccess(base.Model):
     allow_create = Column(Boolean, default=False)
     allow_edit = Column(Boolean, default=False)
     allow_delete = Column(Boolean, default=False)
+    view_tab = Column(Boolean, default=False)
     profile_id = Column(Integer, ForeignKey("profile.id", ondelete="CASCADE"))
     view_id = Column(Integer, ForeignKey("view.id", ondelete="CASCADE"))
     profile = relationship("Profile", back_populates="children")
@@ -114,21 +124,25 @@ class ProfileAccess(base.Model):
             print(formData)
             self.view_id = formData["inherit_view_id"] if "inherit_view_id" in formData else None
             if "profile_fullaccess" in formData:
+                self.view_tab = True
                 self.allow_read = True
                 self.allow_create = True
                 self.allow_edit = True
                 self.allow_delete = True
             elif "profile_readonlyaccess" in formData:
+                self.view_tab = True
                 self.allow_read = True
                 self.allow_create = False
                 self.allow_edit = False
                 self.allow_delete = False
             elif "inherit_view_id" in formData:
+                self.view_tab = formData["inherit_view_tab"]
                 self.allow_read = formData["inherit_view_allow_read"]
                 self.allow_create =  formData["inherit_view_allow_create"]
                 self.allow_edit =  formData["inherit_view_allow_edit"]
                 self.allow_delete =  formData["inherit_view_allow_delete"]
             else:
+                self.view_tab = False
                 self.allow_read = False
                 self.allow_create = False
                 self.allow_edit = False
@@ -159,19 +173,19 @@ class ProfileAccess(base.Model):
 
     def fetchProfileAccessByProfile(self, db, profileId):
         queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id =  \'' + profileId + '\' ORDER BY id ASC'
-        queryFields = 'profileaccess.id, view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete'         
+        queryFields = 'profileaccess.id, view_id, view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete'         
         return db.fetchData('profileaccess, view', queryFields, queryParams, None)
 
-    def fetchProfileAccessByUsername(self, db, username, accessCheck = False, onlyTables = False):
+    def fetchProfileAccessByUsername(self, db, username, accessCheck = False, viewType = "ALL"):
         if username != None and username != '':
             queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND profileaccess.allow_read = true AND username = \'' + username + '\''
             queryFields = 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read'
         else:
-            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND profileaccess.allow_read = true AND view.view_group = \'PUBLIC\' ORDER BY profileaccess.id '
+            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND view.view_group = \'PUBLIC\''
             queryFields = 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read'
         
-        if onlyTables:
-            queryParams += ' AND view.view_type = \'TABLE\' '
+        if viewType != "ALL":
+            queryParams += ' AND view.view_type = \'' + viewType + '\' '
         queryParams += ' ORDER BY profileaccess.id ASC '
         return db.fetchData('profileaccess, view, person', queryFields, queryParams, None)
 
@@ -190,17 +204,42 @@ class ProfileAccess(base.Model):
                 pfaMap[pfa[0]]["allow_edit"] = True
             elif pfa[1] == "delete":
                 pfaMap[pfa[0]]["allow_delete"] = True
+            elif pfa[1] == "viewtab":
+                pfaMap[pfa[0]]["view_tab"] = True
+            #elif pfa[1] == "viewid":
+                #pfaMap[pfa[0]]["view_id"] = value
 
         session = db.initiateSession()
         pfaToUpdate = {}
+        viewToUpdate = {}
         for key, value in pfaMap.items():
             pfaToUpdate[key] = session.query(ProfileAccess).filter(ProfileAccess.id==key).first()
+            
+            
+            pfaToUpdate[key].view_tab = value["view_tab"] if "view_tab" in value else False
+            if pfaToUpdate[key].view_tab:
+                pfaToUpdate[key].allow_read = True
             pfaToUpdate[key].allow_read = value["allow_read"] if "allow_read" in value else False
+            if pfaToUpdate[key].allow_read:
+                pfaToUpdate[key].view_tab = True
+            else:
+                pfaToUpdate[key].view_tab = False
             pfaToUpdate[key].allow_create = value["allow_create"] if "allow_create" in value else False
+            if pfaToUpdate[key].allow_create:
+                pfaToUpdate[key].allow_read = True
+                pfaToUpdate[key].view_tab = True
             pfaToUpdate[key].allow_edit = value["allow_edit"] if "allow_edit" in value else False
+            if pfaToUpdate[key].allow_edit:
+                pfaToUpdate[key].allow_read = True
+                pfaToUpdate[key].view_tab = True                
             pfaToUpdate[key].allow_delete = value["allow_delete"] if "allow_delete" in value else False
+            if pfaToUpdate[key].allow_delete:
+                pfaToUpdate[key].view_tab = pfaToUpdate[key].allow_read = pfaToUpdate[key].allow_create = pfaToUpdate[key].allow_edit = True
+
+            #viewToUpdate[key] = session.query(View).filter(View.id== value["view_id"]).first()
+            #viewToUpdate[key].view_tab = value["view_tab"] if "view_tab" in value else False
         commitStatus = db.commitSession(session)
-        return str(commitStatus)
+        return commitStatus
         
 class View(base.Model):
     __tablename__ = 'view'
@@ -210,14 +249,13 @@ class View(base.Model):
     view_type = Column(String, default="default", index=True) 
     view_url = Column(String, default="/", index=True) 
     view_label = Column(String) 
-    view_tab = Column(Boolean, default=False)
     view_icon = Column(String) 
+    view_tab_default = Column(Boolean, default=False)
     allow_read_default = Column(Boolean, default=False)
     allow_create_default = Column(Boolean, default=False)
     allow_edit_default = Column(Boolean, default=False)
     allow_delete_default = Column(Boolean, default=False)
     children = relationship("ProfileAccess", back_populates="view")
-
 
     def __init__(self, **kwargs):
         if len(list(kwargs.keys())) > 0:
@@ -227,7 +265,7 @@ class View(base.Model):
             self.view_url = kwargs["view_url"]
             self.view_label = kwargs["view_label"]
             self.view_icon = kwargs["view_icon"]
-            self.view_tab = kwargs["view_tab"] if "view_tab" in kwargs else False
+            self.view_tab_default = kwargs["view_tab"] if "view_tab" in kwargs else False
             self.allow_read_default = kwargs["allow_read_default"] if "allow_read_default" in kwargs else False
             self.allow_create_default = kwargs["allow_create_default"] if "allow_create_default" in kwargs else False
             self.allow_edit_default = kwargs["allow_edit_default"] if "allow_edit_default" in kwargs else False

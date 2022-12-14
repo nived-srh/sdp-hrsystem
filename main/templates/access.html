@@ -75,7 +75,8 @@
                 <tr>
                     <th class="p-2 bg-white text-left " scope="col" colspan="12">
                         <span class="align-middle pl-2">Profile</span>
-                        <button type="submit" style="float:right;" class="btn btn-outline-primary btn-sm" type="button">Save</button>
+                        <button type="submit" style="float:right;" class="btn btn-outline-primary btn-sm"
+                            type="button">Save</button>
                     </th>
                 </tr>
                 <tr class="text-center" style="background-color:#D6EAF8">
@@ -84,8 +85,8 @@
                     <th scope="col">View Name</th>
                     <th scope="col">View Group</th>
                     <th scope="col">View URL</th>
-                    <th scope="col">View Tab</th>
                     <th scope="col">View Icon</th>
+                    <th scope="col">View Tab</th>
                     <th scope="col">Allow Read</th>
                     <th scope="col">Allow Create</th>
                     <th scope="col">Allow Edit</th>
@@ -103,8 +104,9 @@
                     <td>{{item.view_name}}</td>
                     <td>{{item.view_group}}</td>
                     <td>{{item.view_url}}</td>
-                    <td>{{item.view_tab}}</td>
                     <td><i class="pt-1 mr-4 {{item.view_icon}}" style="max-width:5px;"></i></td>
+                    <td><input type="checkbox" class="form-check-input" id="view_tab" name="{{item.id}}_viewtab"
+                            {{ "checked" if item.view_tab else "" }}></td>
                     <td><input type="checkbox" class="form-check-input" id="allow_read" name="{{item.id}}_read"
                             {{ "checked" if item.allow_read else "" }}></td>
                     <td><input type="checkbox" class="form-check-input" id="allow_create" name="{{item.id}}_create"
@@ -113,9 +115,11 @@
                             {{ "checked" if item.allow_edit else "" }}></td>
                     <td><input type="checkbox" class="form-check-input" id="allow_delete" name="{{item.id}}_delete"
                             {{ "checked" if item.allow_delete else "" }}></td>
+                    <input type="hidden" id="placeholder" name="{{item.id}}_placeholder" checked />
+                    <input type="hidden" id="view_id" name="{{item.id}}_viewid" value="{{item.view_id}}" />
                 </tr>
                 {% endfor %}
-            </tbody>            
+            </tbody>
             <input type="hidden" id="profile_id" name="profile_id" value="{{response['key']}}" />
         </form>
     </table>
@@ -125,7 +129,7 @@
     </div>
     {% endif %}
     {% else %}
-    
+
     <div id="Profiles">
         <div class="d-flex flex-column bd-highlight">
             <div class="bd-highlight">
@@ -134,7 +138,7 @@
                         <div class="card-header">
                             {{ response["action"]|title }} Profile
                         </div>
-                        <form action="/access/profiles/create" method="POST" autocomplete="off">
+                        <form action="/access/profiles/{{response['action']}}" method="POST" autocomplete="off">
                             <div class="card-body">
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
                                     <div class="col-xs-2">
@@ -147,6 +151,7 @@
                                         <input type="text" class="form-control" id="profile_descr" name="profile_descr"
                                             type="text" value="{{response['formData']['profile_descr']}}">
                                     </div>
+                                    {% if response['action'] != 'edit' %}
                                     <div class="col-xs-4 ml-4">
                                         <label for="profile_readonlyaccess">Read Only Access</label>
                                         <input type="checkbox" class="form-control" id="profile_readonlyaccess"
@@ -159,11 +164,12 @@
                                             name="profile_fullaccess"
                                             value="{{response['formData']['profile_fullaccess']}}" unchecked>
                                     </div>
+                                    {% endif %}
                                     <div class="col-xs-4 ml-4">
                                         <label for="profile_active">Active</label>
                                         <input type="checkbox" class="form-control" id="profile_active"
-                                            name="profile_active" value="{{response['formData']['profile_active']}}"
-                                            {{ "checked" if response['formData']["profile_active"] else "" }}>
+                                            name="profile_active" {{ "checked" if response['formData']["profile_active"]
+                                            else "" }}>
                                     </div>
                                 </div>
                             </div>
@@ -174,6 +180,7 @@
                                         type="button">Cancel</button></a>
                             </div>
                             <input type="hidden" id="profile_custom" name="profile_custom" value="true" />
+                            <input type="hidden" id="profile_id" name="profile_id" value="{{response['key']}}" />
                         </form>
                     </div>
                 </div>
@@ -248,7 +255,7 @@
                 <td>{{item.view_name}}</td>
                 <td>{{item.view_group}}</td>
                 <td>{{item.view_url}}</td>
-                <td>{{item.view_tab}}</td>
+                <td>{{item.view_tab_default}}</td>
                 <td>{{item.allow_read_default}}</td>
                 <td>{{item.allow_create_default}}</td>
                 <td>{{item.allow_edit_default}}</td>

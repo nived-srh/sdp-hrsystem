@@ -6,7 +6,8 @@ class Tier(base.Model):
     __tablename__ = 'tier'
     id = Column(Integer, primary_key=True)
     tier_name = Column(String, nullable=False)
-    tier_payscale = Column(Integer, nullable=False)
+    tier_payscale = Column(Integer, default=0)
+    persons = relationship("Employee", back_populates="tier")
     
 class Payroll(base.Model):
     __tablename__ = 'payroll'

@@ -5,16 +5,6 @@
 <div class="container-fluid px-5">
     <h1 class="mb-4">Manage Recruitment</h1>
 
-    <ul class="nav nav-tabs">
-        <li class="nav-item">
-            <a class="nav-link active" href="#employees" id="manageJobListing"
-                onclick="toggleTab(event, 'JobListing');">Job Listing</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#consultants" id="manageJobApplications"
-                onclick="toggleTab(event, 'JobApplications');">Job Applications</a>
-        </li>
-    </ul>
     {% if "messages" in response %}
     {% if "ERROR" in response["messages"] %}
     <div class="alert alert-warning" role="alert">
@@ -27,7 +17,7 @@
     {% endif %}
     {% endif %}
 
-    <div id="JobListing" class="tabcontent">
+    <div id="JobListing">
 		<div class="d-flex flex-column bd-highlight">
 			<div class="pt-2 bd-highlight">
 				<a href="#" id="addJobListingButton" onclick="toggleForm('JobListingForm');"

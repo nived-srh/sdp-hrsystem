@@ -7,10 +7,10 @@ class Person(base.Model):
     __tablename__ = 'person'
     id = Column(Integer, primary_key=True)
     user_type = Column(String, nullable=False)
+    user_status = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, nullable=False)
     first_name = Column(String, index=True)
     last_name = Column(String, nullable=False, index=True)
     profile_id = Column(Integer, ForeignKey("profile.id"))
@@ -18,7 +18,7 @@ class Person(base.Model):
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
     def __init__(self, formData = None):
-        self.is_active = True
+        self.user_status = "ACTIVE"
         if formData != None:
             self.hashed_password = generate_password_hash(formData["password"])
             self.email = formData["email"]
@@ -42,7 +42,7 @@ class Person(base.Model):
             else: 
                 return "ERROR_USER_NOT_FOUND"
         except Exception as err:
-            return "ERROR"
+            return "ERROR : " + str(err)
 
     def fetchPersons(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('person', queryFields, queryParams, queryLimit)
@@ -50,9 +50,9 @@ class Person(base.Model):
     def fetchByUserId(self, db, userIds = []):
         if userIds != [] and userIds != None:
             if isinstance(userIds, str):   
-                params = 'id IN \'' + userIds + '\'' 
+                params = 'person.id = \'' + userIds + '\'' 
             elif isinstance(userIds, list):
-                params = 'id IN (' + ','.join([ '\'' + usr + '\'' for usr in userIds]) + ')' 
+                params = 'person.id IN (' + ','.join([ '\'' + usr + '\'' for usr in userIds]) + ')' 
             params += ' AND person.profile_id = profile.id' 
             return db.fetchData('person, profile', 'person.id, email, username, first_name, last_name, profile.profile_name', params, None) 
         return "ERROR_MISSING_USERIDS"
@@ -63,7 +63,7 @@ class Person(base.Model):
                 params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-            return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params, None) 
+            return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params) 
         return "ERROR_MISSING_USERNAMES"
 
     ''' Methods overrode by child insert methods
@@ -93,11 +93,14 @@ class Person(base.Model):
     '''        
 
 class Employee(Person):
-    __mapper_args__ = {'polymorphic_identity': 'employee'}
     __tablename__ = 'employee'
     person_id = Column(None, ForeignKey('person.id'), primary_key=True)
+    manager_id = Column(None, ForeignKey('person.id'))
     employee_id = Column(Integer, Sequence("employee_id_seq", start=1000), primary_key=True)
     num_vacations = Column(Integer)
+    tier_id = Column(Integer, ForeignKey("tier.id"))
+    tier = relationship("Tier", back_populates="persons")
+    __mapper_args__ = dict(polymorphic_identity = 'employee', inherit_condition = (person_id == Person.id))
 
     def __init__(self):
         pass
@@ -133,8 +136,10 @@ class External(Person):
     id = Column(None, ForeignKey('person.id'), primary_key=True)
     ext_type = Column(String)
     account_id = Column(None, ForeignKey('account.id'))
-    account = relationship("Account", back_populates="external_persons")
     contract_period_days = Column(Integer)
+    tier_id = Column(Integer, ForeignKey("tier.id"))
+    account = relationship("Account", back_populates="external_persons")
+    tier = relationship("Tier", back_populates="persons")
 
     def __init__(self):
         pass
@@ -166,14 +171,13 @@ class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
-    num_residents = Column(Integer)
 
     def __init__(self):
         pass
 
     def createCandidateForm(self, db, formData):
         self.user_type = "candidate"
-        self.num_vacations = 30
+        formData["email"] = formData["username"]
         super(Candidate, self).__init__(formData) 
         existingUsers = self.fetchByUsername(db, self.username)
         if existingUsers == None or list(existingUsers) == []:

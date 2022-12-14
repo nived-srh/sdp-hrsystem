@@ -145,7 +145,7 @@
 			</div>
 		</div>
 
-		{% if "payroll" in response and response["payroll"] != None %}
+		{% if "myapplications" in response and response["myapplications"] != None %}
 
 		<table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
 			<thead>
@@ -158,7 +158,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{% for item in response["payroll"] %}
+				{% for item in response["myapplications"] %}
 				<tr>
 					<td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
 					</td>
@@ -175,7 +175,7 @@
 		{% else %}
 		<p class="text-center text-muted">No payrolls found. Click on <a href="#" id="addPayrollButton"
 				onclick="toggleForm('PayrollForm');">"Add Payroll"</a> button to create payroll details in the
-			system"
+			system.
 		</p>
 		{% endif %}
 	</div>

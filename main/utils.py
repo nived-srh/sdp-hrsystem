@@ -1,21 +1,30 @@
 from .models import *
 
 def fetchSidebarLinks(db, username):    
-    results = access.ProfileAccess().fetchProfileAccessByUsername(db, username)
     viewData = {}
+    if username != None:
+        results = access.ProfileAccess().fetchProfileAccessByUsername(db, username=username, viewType="PAGE")
+    else:
+        results = access.View().fetchViews(db, queryParams="view_group = \'PUBLIC\'")
+        
     for row in results:
         if row.view_group not in viewData:
             viewData[row.view_group] = []
-        if row.allow_read:
-            viewData[row.view_group].append(row)
+        viewData[row.view_group].append(row)
+    
+    print("asedasdas",str(viewData))
     return viewData 
 
 def fetchSearchableViews(db, username):    
-    return access.ProfileAccess().fetchProfileAccessByUsername(db, username, onlyTables=True)
+    return access.ProfileAccess().fetchProfileAccessByUsername(db, username)
     
-def validateUserAccess(db, username, view, action):    
-    results = access.ProfileAccess().fetchProfileAccessByUsername(db, username, True)
+def validateUserAccess(db, username, viewUrl, action=None):    
+    if username != None:
+        results = access.ProfileAccess().fetchProfileAccessByUsername(db, username, True)
+    else:
+        results = access.View().fetchViews(db, queryParams="view_group = \'PUBLIC\'")
+        
     for row in results:
-        if row.view_name == view.view_name:
+        if row.view_url == viewUrl:
             return True
     return False     
