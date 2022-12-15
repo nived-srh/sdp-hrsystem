@@ -44,6 +44,7 @@ def initializeDB(db):
     viewList.append(View(view_name = "profiles", view_group = "admin", view_url = "/profile", view_label = "Profile", view_icon = "fa-solid fa-fingerprint fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = False, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
     viewList.append(View(view_name = "views", view_group = "admin", view_url = "/view", view_label = "View", view_icon = "fa-solid fa-fingerprint fa-fw", view_type = "TABLE", view_tab = False, allow_read_default = False, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
     viewList.append(View(view_name = "settings", view_group = "admin", view_url = "/settings", view_label = "Settings", view_icon = "fa-solid fa-gear fa-fw", view_type = "PAGE", view_tab = False, allow_read_default = False, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
+    viewList.append(View(view_name = "fetchData", view_group = "admin", view_url = "/fetchData", view_label = "FetchData", view_icon = "fa-solid fa-link", view_type = "API", view_tab = False, allow_read_default = False, allow_create_default = False, allow_edit_default = False, allow_delete_default = False))
     session = db.initiateSession()
     session.add_all(viewList)
     db.commitSession(session, True)

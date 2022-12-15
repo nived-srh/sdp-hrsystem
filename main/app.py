@@ -12,7 +12,7 @@ app.config['SECRET_KEY'] = AppConfig.SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = AppConfig.PERMANENT_SESSION_LIFETIME
 
 db = None
-publicViews = ["/static", "/dropDatabase", "/createDatabase", "/favicon.ico", "/unauthorized", "login", "logout", "register"] 
+publicViews = ["/static", "dropDatabase", "createDatabase", "favicon.ico", "unauthorized", "login", "logout", "register"] 
 
 @app.before_request
 def beforeRequest():

@@ -11,8 +11,14 @@ class Person(base.Model):
     email = Column(String, unique=True, nullable=False, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
-    first_name = Column(String, index=True)
     last_name = Column(String, nullable=False, index=True)
+    first_name = Column(String, index=True)
+    salutation = Column(String, index=True)
+    addr_line = Column(String)
+    addr_city = Column(String)
+    addr_state = Column(String)
+    addr_country = Column(String)
+    addr_zip = Column(String)
     profile_id = Column(Integer, ForeignKey("profile.id"))
     profile = relationship("Profile", back_populates="persons")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
@@ -24,7 +30,14 @@ class Person(base.Model):
             self.email = formData["email"]
             self.username = formData["username"]
             self.last_name = formData["last_name"]
+            self.salutation = formData["salutation"]
             self.first_name = formData["first_name"] if "first_name" in formData else ""
+            self.addr_line = formData["addr_line"] if "addr_line" in formData else ""
+            self.addr_city = formData["addr_city"] if "addr_city" in formData else ""
+            self.addr_state = formData["addr_state"] if "addr_state" in formData else ""
+            self.addr_country = formData["addr_country"] if "addr_country" in formData else ""
+            self.addr_zip = formData["addr_zip"] if "addr_zip" in formData else ""
+
             if "profile_id" in formData:
                 self.profile_id = formData["profile_id"]
             elif "profile" in formData:
@@ -99,6 +112,8 @@ class Employee(Person):
     employee_id = Column(Integer, Sequence("employee_id_seq", start=1000), primary_key=True)
     num_vacations = Column(Integer)
     tier_id = Column(Integer, ForeignKey("tier.id"))
+
+
     tier = relationship("Tier", back_populates="persons")
     __mapper_args__ = dict(polymorphic_identity = 'employee', inherit_condition = (person_id == Person.id))
 
@@ -183,6 +198,19 @@ class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
+    cv_file = Column(String)
+    '''edu_school = Column(String)
+    edu_school_name = Column(String)
+    edu_school_grade = Column(String)
+    edu_school_year = Column(String)
+    edu_ug = Column(String)
+    edu_ug_name = Column(String)
+    edu_ug_grade = Column(String)
+    edu_ug_year = Column(String)
+    edu_grad = Column(String)
+    edu_grad_name = Column(String)
+    edu_grad_grade = Column(String)
+    edu_grad_year = Column(String)'''
 
     def __init__(self):
         pass
