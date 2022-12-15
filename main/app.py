@@ -22,7 +22,7 @@ def beforeRequest():
             hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
         else:
             hasViewAccess = utils.validateUserAccess(db, None, request.path) 
-        response = {}
+        
         if not hasViewAccess and request.path != "/unauthorized" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
             return redirect(url_for('unauthorized'))
 
@@ -99,49 +99,27 @@ def globalSearch():
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
+    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)
 
-    response = {}
+    return render_template("search.html", response=response)
     if "accounts" in response["views"] :
         response["accounts"] = None#accounts.Account().search(db, session['userSession'], views["accounts"])
     elif "projects" in response["views"] :
         response["projects"] = None
     elif "employee" in response["views"] :
-        response["employee"] = None
+        response["employee"] = users.Employee().fetchEmployeesWithDetails(db)
     elif "consultants" in response["views"] :
-        response["consultants"] = None
+        response["consultants"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONSULTANT' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
     elif "contractors" in response["views"] :
-        response["contractors"] = None
+        response["contractors"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONTRACTOR' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
     elif "profiles" in response["views"] :
         response["profiles"] = None
     elif "views" in response["views"] :
         response["views"] = None
+    elif "payroll" in response["views"] :
+        response["payroll"] = payroll.Payroll().fetchPayrolls(db)
 
     return render_template("search.html", response=response)
-
-@app.route("/jobs", defaults={'key': None })
-@app.route("/jobs/apply/<key>", methods=['GET', 'POST'])
-@app.route("/jobs/myapplication", defaults={'key': None })
-def jobportal(key):
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    response = formData = {}
-    response["views"] = utils.fetchSidebarLinks(db, None)    
-    response["hasSidebar"] = True
-    response["formData"] = formData
-    
-    if request.path == "/jobs":
-        response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
-        return render_template("jobs.html", response=response)
-    elif request.path == "/jobs/apply":
-        pass
-    elif request.path == "/jobs/myapplication":
-        if 'userSession' not in session:  
-            return render_template("myapplications.html", response=response)
-        else:              
-            response["userSession"] = session['userSession']
-            return render_template("myapplications.html", response=response)
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
@@ -242,6 +220,39 @@ def vacation():
         response["formData"] = formData
     response["leaveHistory"] = services.DailyStatus().fetchDailyStatusByUsername(db,  session['userSession']['id'])    
     return render_template("vacation.html", response=response)              
+
+@app.route("/jobs",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/jobs/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
+@app.route("/jobs/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
+@app.route("/jobs/<table>/<action>/<key>", methods=['GET','POST'])
+def jobportal(table, action, key):
+    if table == None:
+        return redirect("/jobs/listing")    
+
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    response = formData = {}
+    response["views"] = utils.fetchSidebarLinks(db, None)    
+    response["hasSidebar"] = True
+    response["formData"] = formData
+    print("asdasdas ", table)
+    if request.method == 'POST':
+        pass
+    else:
+        if table == "listing":
+            response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
+            return render_template("jobs.html", response=response)
+        elif table == "apply":
+            response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
+            return render_template("jobs.html", response=response)
+        elif table == "myapplication":
+            if 'userSession' not in session:  
+                return render_template("myapplications.html", response=response)
+            else:              
+                response["userSession"] = session['userSession']
+                return render_template("myapplications.html", response=response)
          
 @app.route("/recruitment",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/recruitment/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
@@ -302,7 +313,7 @@ def recruitment(table, action, key):
 @app.route("/payroll/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/payroll/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/payroll/<table>/<action>/<key>", methods=['GET','POST'])
-def payroll(table, action, key):
+def managePayroll(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
     if table == None:
@@ -312,24 +323,67 @@ def payroll(table, action, key):
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    response = {}
+    response = formData = {}
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
     response["table"] = table
     response["action"] = action
     response["key"] = key
+    formData['proll_period'] = date.today().strftime("%Y-%m")    
+
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
 
     if request.method == 'POST':
-        formData = dict(request.form)
-        formData["employee_id"] = session['userSession']['id']
-        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
-        response["messages"] = new_status
-    else:        
-        formData = {}
-        formData["status_date"] = date.today()
-        response["formData"] = formData
-    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
+         if action == "create":
+            formData = dict(request.form)
+            if table == "tiers": 
+                response["messages"] = payroll.Tier().createTierForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/tiers?msg=" + response["messages"]) 
+            elif table == "details":
+                response["messages"] = payroll.Payroll().createPayrollForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/details?msg=" + response["messages"]) 
+
+    if key != None:        
+        if action == "read":            
+            pass
+        elif action == "edit":
+            if table == "tiers": 
+                result = payroll.Tier().fetchByTierId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['tier_name'] = row.tier_name        
+                        formData['tier_descr'] = row.tier_descr        
+                        formData['tier_payscale'] = row.tier_payscale        
+                        formData['tier_active'] = row.tier_active                
+            elif table == "details": 
+                result = payroll.Payroll().fetchByPayrollId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['proll_period'] = row.proll_year + "-" + row.proll_month
+                        formData['proll_status'] = row.proll_status
+        elif action == "delete":
+            formData = dict(request.form)
+            if table == "tiers": 
+                result = payroll.Tier().deleteTier(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/payroll/tiers?msg=" + result)
+                else:
+                    response["messages"] = result    
+            elif table == "details":    
+                result = payroll.Payroll().deletePayroll(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/payroll/details?msg=" + result)
+                else:
+                    response["messages"] = result     
+    elif key == None and action != None and table != None and request.method == 'GET':
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
+          
+    response["formData"] = formData
+    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
     return render_template("payroll.html", response=response)       
 
 @app.route("/people",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])

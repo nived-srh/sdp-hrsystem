@@ -45,6 +45,7 @@ class Profile(base.Model):
                 try:
                     for item in viewList:
                         formData["inherit_view_id"] = item.id
+                        formData["inherit_view_tab"] = item.view_tab_default
                         formData["inherit_view_allow_read"] = item.allow_read_default
                         formData["inherit_view_allow_create"] = item.allow_create_default
                         formData["inherit_view_allow_edit"] = item.allow_edit_default
@@ -178,7 +179,11 @@ class ProfileAccess(base.Model):
 
     def fetchProfileAccessByUsername(self, db, username, accessCheck = False, viewType = "ALL"):
         if username != None and username != '':
-            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND profileaccess.allow_read = true AND username = \'' + username + '\''
+            queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND username = \'' + username + '\''
+            if accessCheck:
+                queryParams += ' AND profileaccess.allow_read = true '
+            else:
+                queryParams += ' AND profileaccess.view_tab = true '
             queryFields = 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read, allow_create, allow_edit, allow_delete' if accessCheck else 'view_name, view_group, view_url, view_label, view_tab, view_icon, allow_read'
         else:
             queryParams = 'profileaccess.view_id = view.id AND profileaccess.profile_id = person.profile_id AND view.view_group = \'PUBLIC\''

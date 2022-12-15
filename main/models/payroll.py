@@ -52,6 +52,7 @@ class Tier(base.Model):
         return db.deleteData('tier', queryParams)
 
     def fetchByTierId(self, db, recordIds = []):
+        params = ""
         if recordIds != [] and recordIds != None:
             if isinstance(recordIds, str):   
                 params = 'id = \'' + recordIds + '\'' 
@@ -72,13 +73,17 @@ class Payroll(base.Model):
     proll_month = Column(String, nullable=False)
     proll_year = Column(String, nullable=False)
     proll_status = Column(String, nullable=False, default="DRAFT")
+    proll_externalid = Column(String, unique=True, nullable=False)
     proll_details = relationship("PayrollDetails", back_populates="payroll")
     
     def __init__(self, formData = None):
         if formData != None:
-            self.proll_month = formData["proll_month"]
-            self.proll_year = formData["proll_year"]
-            self.proll_status = formData["proll_status"] if "proll_status" in formData else "DRAFT"
+            if formData["proll_period"] != None:
+                period = formData["proll_period"].split("-")
+                self.proll_month = period[1]
+                self.proll_year = period[0]
+                self.proll_status = str(formData["proll_status"] if "proll_status" in formData else "DRAFT").upper()
+                self.proll_externalid = self.proll_month.lower() + '_' + self.proll_year.lower()  + '_' +  self.proll_status
 
     def createPayrollForm(self, db, formData):
         self.__init__(formData)
@@ -110,17 +115,18 @@ class Payroll(base.Model):
         return db.deleteData('payroll', queryParams)
 
     def fetchByPayrollId(self, db, recordIds = []):
+        params = ""
         if recordIds != [] and recordIds != None:
             if isinstance(recordIds, str):   
                 params = 'id = \'' + recordIds + '\'' 
             elif isinstance(recordIds, list):
                 params = 'id IN (' + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ')' 
-            return db.fetchData('tier', None, params, None) 
+            return db.fetchData('payroll', None, params, None) 
         return "ERROR_MISSING_PAYROLLIDS"
 
-    def fetchPayroll(self, db, queryFields = None, queryParams = None, queryLimit = None):
+    def fetchPayrolls(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('payroll', queryFields, queryParams, queryLimit)
-        
+
     '''
     def fetchTierWithUserCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('tier, person', "id, tier_name, tier_descr, tier_active, tier_default, tier_payscale, (SELECT COUNT(id) FROM person WHERE person.tier_id = tier.id)" , queryParams, queryLimit)

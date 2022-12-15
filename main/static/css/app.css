@@ -44,7 +44,6 @@ body{
 .login-bg {
     background-image: url("../images/main-bg.jpg");
     background-color: #cccccc;
-    height: 100vh;
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
@@ -89,7 +88,7 @@ body{
 }
 
 /* Style the tab content */
-.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm, .ProfileForm, .JobListingForm, .PayrollForm, .TiersForm {
+.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm, .ProfileForm, .JobListingForm, .TiersForm {
     display: none;
     margin-top:10px;
 }  
