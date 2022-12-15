@@ -28,9 +28,9 @@
 				<div id="JobListingForm" class="JobListingForm">
 					<div class="card containter-fluid mb-3">
 						<div class="card-header">
-							Add Job Listing
+                            {{ response["action"]|title if response["action"] != None else "Add" }} Job Listing
 						</div>
-						<form action="/people/contractors/create" method="POST" autocomplete="off">
+						<form action="/recruitment/joblisting/create" method="POST" autocomplete="off">
 							<div class="card-body">
 								<div class="form-group d-flex flex-row justify-content-between mb-2">
 									<div class="col-xs-2 flex-grow-1">
@@ -57,11 +57,19 @@
 										<input class="form-control" id="job_role" name="job_role" type="text"
 											value="{{response['formData']['job_role']}}">
 									</div>
-									<div class="col-xs-3 flex-grow-1">
+									<div class="col-xs-3 flex-grow-1 mr-4">
 										<label for="job_location">Job Location</label>
 										<input class="form-control" id="job_location" name="job_location" type="text"
 											value="{{response['formData']['job_location']}}">
-									</div>
+									</div><div class="col-xs-3 flex-grow-1">
+                                        <label for="salutation">Listing Status</label>
+                                        <select class="form-control" id="salutation">
+                                            <option>OPEN</option>
+                                            <option>CLOSED</option>
+                                            <option>ON HOLD</option>
+                                            <option>INACTIVE</option>
+                                        </select>
+                                    </div>
 								</div>
 							</div>
 							<div class="card-footer">
@@ -76,29 +84,34 @@
 			</div>
 		</div>
 
-		{% if "jobListing" in response and response["jobListing"] != None %}
-
+        {% if response["joblistings"].rowcount > 0 %}
 		<table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
 			<thead>
 				<tr class="text-center" style="background-color:#D6EAF8">
 					<th scope="col" colspan="2" style="width:10%">Action</th>
-					<th scope="col">Username</th>
-					<th scope="col">First Name</th>
-					<th scope="col">Last Name</th>
-					<th scope="col">Email</th>
+					<th scope="col">Job Title</th>
+					<th scope="col">Job Description</th>
+					<th scope="col">Experience Required</th>
+					<th scope="col">Job Role</th>
+					<th scope="col">Job Location</th>
+					<th scope="col">Listing Status</th>
+					<th scope="col">Number of Applicants</th>
 				</tr>
 			</thead>
 			<tbody>
-				{% for item in response["jobListing"] %}
+				{% for item in response["joblistings"] %}
 				<tr>
-					<td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+					<td class="text-center"><a href="/recruitment/joblisting/edit/{{item.id}}"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
 					</td>
 					<td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a>
 					</td>
-					<td>{{item.username}}</td>
-					<td>{{item.first_name}}</td>
-					<td>{{item.last_name}}</td>
-					<td>{{item.email}}</td>
+					<td>{{item.job_title}}</td>
+					<td>{{item.job_descr}}</td>
+					<td>{{item.job_exp}}</td>
+					<td>{{item.job_role}}</td>
+					<td>{{item.job_location}}</td>
+					<td>{{item.job_status}}</td>
+					<td>{{item.count}}</td>
 				</tr>
 				{% endfor %}
 			</tbody>

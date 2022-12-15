@@ -15,15 +15,16 @@ class JobListing(base.Model):
     children = relationship("JobApplication", back_populates="jobListing")
 
     def __init__(self, formData = None):
+        pass
         if formData != None:
-            self.job_name = formData["job_title"]
+            self.job_title = formData["job_title"]
             self.job_descr = formData["job_descr"] if "job_descr" in formData else ""
             self.job_exp = formData["job_exp"] if "job_exp" in formData else ""
-            self.job_role = formData["job_role"] if "job_exp" in formData else ""
-            self.job_status = formData["job_status"] if "job_exp" in formData else "OPEN"
-            self.job_location = formData["job_status"] if "job_exp" in formData else "OPEN"
+            self.job_role = formData["job_role"] if "job_role" in formData else ""
+            self.job_status = formData["job_status"] if "job_status" in formData else "OPEN"
+            self.job_location = formData["job_status"] if "job_status" in formData else "TBD"
 
-    def createJobListing(self, db, formData):
+    def createJobListingForm(self, db, formData):
         self.__init__(formData)
         return self.createJobListing(db)
 
@@ -39,7 +40,32 @@ class JobListing(base.Model):
         except Exception as err:
             return "ERROR : " + str(err)
 
-    def fetchJobListing(self, db, queryFields = None, queryParams = None, queryLimit = None):
+    def editJobListingForm(self, db, formData):
+        session = db.initiateSession()
+        '''profileToEdit = session.query(Profile).filter(Profile.id==formData["profile_id"]).first()
+        profileToEdit.profile_name = formData["profile_name"] 
+        profileToEdit.profile_descr = formData["profile_descr"] 
+        profileToEdit.profile_active = True if "profile_active" in formData else False'''
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
+    def deleteJobListing(self, db, recordIds):
+        queryParams = "id IN (" + ','.join([ '\'' + prfid + '\'' for prfid in recordIds]) + ") AND profile_custom = true"
+        return db.deleteData('profile', queryParams)
+
+    def fetchByJobListingId(self, db, jobListingIds = []):
+        if jobListingIds != [] and jobListingIds != None:
+            if isinstance(jobListingIds, str):   
+                params = 'id = \'' + jobListingIds + '\'' 
+            elif isinstance(jobListingIds, list):
+                params = 'id IN (' + ','.join([ '\'' + jl + '\'' for jl in jobListingIds]) + ')' 
+            return db.fetchData('joblisting', None, params, None) 
+        return "ERROR_MISSING_JOBLISTINGIDS"
+
+    def fetchJobListingWithApplicantCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('joblisting', "id, job_title, job_descr, job_exp, job_location, job_status, job_role, (SELECT COUNT(id) FROM jobapplication WHERE jobapplication.job_id = joblisting.id)" , queryParams, queryLimit)
+
+    def fetchJobListings(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('joblisting', queryFields, queryParams, queryLimit)
 
 class JobApplication(base.Model):

@@ -136,7 +136,7 @@
                 <div id="ProfileForm" class="ProfileForm">
                     <div class="card containter-fluid mb-3">
                         <div class="card-header">
-                            {{ response["action"]|title }} Profile
+                            {{ response["action"]|title if response["action"] != None else "Add" }} Profile
                         </div>
                         <form action="/access/profiles/{{response['action']}}" method="POST" autocomplete="off">
                             <div class="card-body">

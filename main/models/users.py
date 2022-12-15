@@ -24,7 +24,7 @@ class Person(base.Model):
             self.email = formData["email"]
             self.username = formData["username"]
             self.last_name = formData["last_name"]
-            self.first_name = formData["first_name"] if "first_name" in formData else None
+            self.first_name = formData["first_name"] if "first_name" in formData else ""
             if "profile_id" in formData:
                 self.profile_id = formData["profile_id"]
             elif "profile" in formData:
@@ -142,7 +142,7 @@ class Employee(Person):
 class External(Person):
     __mapper_args__ = {'polymorphic_identity': 'external'}
     __tablename__ = 'external'
-    id = Column(None, ForeignKey('person.id'), primary_key=True)
+    person_id = Column(None, ForeignKey('person.id'), primary_key=True)
     ext_type = Column(String)
     account_id = Column(None, ForeignKey('account.id'))
     contract_period_days = Column(Integer)
@@ -176,6 +176,9 @@ class External(Person):
         except Exception as err:
             return "ERROR : " + str(err) 
 
+    def fetchExternalsWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('external, person, profile', queryFields, queryParams, queryLimit)    
+
 class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
@@ -206,3 +209,5 @@ class Candidate(Person):
         except Exception as err:
             return "ERROR : " + str(err)
 
+    def fetchCandidatesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('candidate, person, profile', queryFields, queryParams, queryLimit)    

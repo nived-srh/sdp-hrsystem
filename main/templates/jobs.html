@@ -3,38 +3,35 @@
 {% block content %}
 <div class="container-fluid p-5">
     <h1 class="mb-4">Jobs</h1>
-
-    {% if "joblistings" in response and response["joblistings"] != None %}
-
+    
+    {% if response["joblistings"].rowcount > 0 %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
         <thead>
             <tr class="text-center" style="background-color:#D6EAF8">
-                <th scope="col" colspan="2" style="width:10%">Action</th>
-                <th scope="col">Username</th>
-                <th scope="col">First Name</th>
-                <th scope="col">Last Name</th>
-                <th scope="col">Email</th>
+                <th scope="col" style="width:10%">Action</th>
+                <th scope="col">Job Title</th>
+                <th scope="col">Job Description</th>
+                <th scope="col">Experience Required</th>
+                <th scope="col">Job Role</th>
+                <th scope="col">Job Location</th>
+                <th scope="col">Listing Status</th>
             </tr>
         </thead>
         <tbody>
             {% for item in response["joblistings"] %}
             <tr>
-                <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+                <td class="text-center"><a href="/jobs/apply/{{item.id}}">Apply</a>
                 </td>
-                <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a>
-                </td>
-                <td>{{item.username}}</td>
-                <td>{{item.first_name}}</td>
-                <td>{{item.last_name}}</td>
-                <td>{{item.email}}</td>
+                <td>{{item.job_title}}</td>
+                <td>{{item.job_descr}}</td>
+                <td>{{item.job_exp}}</td>
+                <td>{{item.job_role}}</td>
+                <td>{{item.job_location}}</td>
+                <td>{{item.job_status}}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <div class="alert alert-warning text-center" role="alert">
-        No open Job Listings found. Please check back at later time.
-    </div>
     {% endif %}
 </div>
 {% endblock content %}

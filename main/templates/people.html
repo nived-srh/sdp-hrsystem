@@ -305,10 +305,8 @@
                 </div>
             </div>
         </div>
-        {% if response["consultants"].rowcount > 0 %}
-        {% for item in response["consultants"] %}
-        {% if "consultants" in response and response["consultants"] != None %}
 
+        {% if response["consultants"].rowcount > 0 %}
         <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
             <thead>
                 <tr class="text-center" style="background-color:#D6EAF8">
@@ -460,8 +458,7 @@
             </div>
         </div>
 
-        {% if "contractors" in response and response["contractors"] != None %}
-
+        {% if response["contractors"].rowcount > 0 %}
         <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
             <thead>
                 <tr class="text-center" style="background-color:#D6EAF8">

@@ -37,9 +37,8 @@ $( document ).ready(function() {
                 toggleForm('ProfileForm');
             }
         }else if(people_data.table == "joblisting"){
-            document.getElementById("manageJobListing").click();
             if(people_data.action == "create" || people_data.action == "edit"){
-                toggleForm('JobListing');
+                toggleForm('JobListingForm');
             }
         }else if(people_data.table == "details"){
             document.getElementById("managePayroll").click();

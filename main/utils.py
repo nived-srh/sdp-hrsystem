@@ -12,7 +12,6 @@ def fetchSidebarLinks(db, username):
             viewData[row.view_group] = []
         viewData[row.view_group].append(row)
     
-    print("asedasdas",str(viewData))
     return viewData 
 
 def fetchSearchableViews(db, username):    

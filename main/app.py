@@ -14,18 +14,17 @@ db = None
 
 @app.before_request
 def beforeRequest():
-    if '/static' not in request.path:
-        if request.path != "/dropDatabase" and request.path != "/createDatabase":
-            global db
-            if db == None:
-                db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-            if 'userSession' in session:        
-                hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
-            else:
-                hasViewAccess = utils.validateUserAccess(db, None, request.path) 
-            response = {}
-            if not hasViewAccess and request.path != "/page_not_found" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
-                return redirect(url_for('page_not_found'))
+    if '/static' not in request.path and request.path != "/dropDatabase" and request.path != "/createDatabase" and request.path != "/favicon.ico":
+        global db
+        if db == None:
+            db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+        if 'userSession' in session:        
+            hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
+        else:
+            hasViewAccess = utils.validateUserAccess(db, None, request.path) 
+        response = {}
+        if not hasViewAccess and request.path != "/unauthorized" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
+            return redirect(url_for('unauthorized'))
 
 @app.route("/")
 def home():
@@ -120,8 +119,9 @@ def globalSearch():
     return render_template("search.html", response=response)
 
 @app.route("/jobs")
+@app.route("/jobs/apply")
 @app.route("/jobs/myapplication")
-def jobs():
+def jobportal():
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
@@ -132,6 +132,7 @@ def jobs():
     response["formData"] = formData
     
     if request.path == "/jobs":
+        response["joblistings"] = jobs.JobListing().fetchJobListings(db)
         return render_template("jobs.html", response=response)
     elif request.path == "/jobs/myapplication":
         if 'userSession' not in session:  
@@ -164,7 +165,28 @@ def profile():
         formData["status_date"] = date.today()
         response["formData"] = formData
     response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
-    return render_template("dailystatus.html", response=response)       
+    return render_template("profile.html", response=response)       
+        
+@app.route("/accounts", methods=["GET", "POST"])
+def accounts():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+        
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+
+    if request.method == 'POST':
+        pass
+    else:        
+        pass
+    response["accounts"] = None #services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
+    return render_template("accounts.html", response=response)       
         
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
@@ -241,11 +263,37 @@ def recruitment(table, action, key):
     response["key"] = key
 
     if request.method == 'POST':
-        pass
-    else:        
-        pass
+        if action == "create":
+            formData = dict(request.form)
+            if table == "joblisting": 
+                response["messages"] = jobs.JobListing().createJobListingForm(db, formData)
+    
+    if key != None:        
+        if action == "read":
+            pass
+        elif action == "edit":
+            if table == "joblisting": 
+                result = jobs.JobListing().fetchByJobListingId(db, key)
+                if result != None:
+                    for row in result:                
+                        formData["job_title"] = row.job_title
+                        formData["job_descr"] = row.job_descr
+                        formData["job_exp"] = row.job_exp
+                        formData["job_location"] = row.job_location
+                        formData["job_role"] = row.job_role
+                        formData["job_status"] = row.job_status
+        elif action == "delete":
+            formData = dict(request.form)
+            result = jobs.JobListing().deleteJobListing(db, list(key))
+            if result == "SUCCESS":
+                return redirect("/recruitment?msg=" + result)
+            else:
+                response["messages"] = result         
+    elif key == None and action != None and table != None and request.method == 'GET':
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"
 
     response["formData"] = formData
+    response["joblistings"] = jobs.JobListing().fetchJobListingWithApplicantCount(db)
     return render_template("recruitment.html", response=response)       
 
 @app.route("/payroll",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -354,9 +402,9 @@ def managePeople(table, action, key):
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"
 
     response["formData"] = formData
-    response["employees"] = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY id DESC")
-    response["contractors"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
-    response["consultants"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONSULTANT' ORDER BY id DESC")
+    response["employees"] = users.Employee().fetchEmployeesWithDetails(db, queryParams=" person.profile_id = profile.id AND person.user_type = 'employee' AND person.id = employee.person_id ORDER BY person.id DESC")
+    response["contractors"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONTRACTOR' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
+    response["consultants"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONSULTANT' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
     return render_template("people.html", response=response)   
     
 
@@ -451,11 +499,8 @@ def fetchData(table, limit):
             "profile_name" : row.view_group    
         } for row in results]
     elif table =="consultants":
-        results = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
-        response = [{
-            "id": row.last_name , 
-            "profile_name" : row.username    
-        } for row in results]
+        results = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONTRACTOR' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
+        response =str(results)
     if results != None:
         return jsonify({
             table : response})
@@ -491,8 +536,8 @@ def dropDB():
     return jsonify({ "result": "SUCCESS" })
 
 @app.errorhandler(404)
-@app.route("/page_not_found")
-def page_not_found():
+@app.route("/unauthorized")
+def unauthorized(e=None):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
     else:
