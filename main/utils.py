@@ -25,6 +25,8 @@ def validateUserAccess(db, username, viewUrl, action=None):
         results = access.View().fetchViews(db, queryParams="view_group = \'PUBLIC\'")
         
     for row in results:
-        if row.view_url == viewUrl:
+        if row.view_url == "/" and row.view_url == viewUrl:
+            return True
+        elif row.view_url in viewUrl and row.view_url != "/":
             return True
     return False     

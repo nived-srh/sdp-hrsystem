@@ -127,6 +127,15 @@ class Employee(Person):
         except Exception as err:
             return "ERROR : " + str(err)
     
+    def editEmployeeForm(self, db, formData):
+        session = db.initiateSession()
+        profileToEdit = session.query(Employee).filter(Person.id==formData["id"]).first()
+        profileToEdit.profile_name = formData["profile_name"] 
+        profileToEdit.profile_descr = formData["profile_descr"] 
+        profileToEdit.profile_active = True if "profile_active" in formData else False
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
     def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
 

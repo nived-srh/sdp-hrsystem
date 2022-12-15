@@ -15,16 +15,17 @@ db = None
 @app.before_request
 def beforeRequest():
     if '/static' not in request.path:
-        global db
-        if db == None:
-            db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-        if 'userSession' in session:        
-            hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
-        else:
-            hasViewAccess = utils.validateUserAccess(db, None, request.path) 
-        response = {}
-        if not hasViewAccess and request.path != "/page_not_found" and request.path != "/login" and request.path != "/logout":
-            return redirect(url_for('page_not_found'))
+        if request.path != "/dropDatabase" and request.path != "/createDatabase":
+            global db
+            if db == None:
+                db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+            if 'userSession' in session:        
+                hasViewAccess = utils.validateUserAccess(db, session['userSession']["username"], request.path) 
+            else:
+                hasViewAccess = utils.validateUserAccess(db, None, request.path) 
+            response = {}
+            if not hasViewAccess and request.path != "/page_not_found" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
+                return redirect(url_for('page_not_found'))
 
 @app.route("/")
 def home():
@@ -244,6 +245,7 @@ def recruitment(table, action, key):
     else:        
         pass
 
+    response["formData"] = formData
     return render_template("recruitment.html", response=response)       
 
 @app.route("/payroll",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -448,7 +450,12 @@ def fetchData(table, limit):
             "id": row.view_name , 
             "profile_name" : row.view_group    
         } for row in results]
-    
+    elif table =="consultants":
+        results = users.Person().fetchPersons(db, queryParams=" user_type = 'external' AND ext_type = 'CONTRACTOR' ORDER BY id DESC")
+        response = [{
+            "id": row.last_name , 
+            "profile_name" : row.username    
+        } for row in results]
     if results != None:
         return jsonify({
             table : response})

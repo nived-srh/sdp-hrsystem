@@ -220,21 +220,15 @@ class ProfileAccess(base.Model):
             if pfaToUpdate[key].view_tab:
                 pfaToUpdate[key].allow_read = True
             pfaToUpdate[key].allow_read = value["allow_read"] if "allow_read" in value else False
-            if pfaToUpdate[key].allow_read:
-                pfaToUpdate[key].view_tab = True
-            else:
-                pfaToUpdate[key].view_tab = False
             pfaToUpdate[key].allow_create = value["allow_create"] if "allow_create" in value else False
             if pfaToUpdate[key].allow_create:
                 pfaToUpdate[key].allow_read = True
-                pfaToUpdate[key].view_tab = True
             pfaToUpdate[key].allow_edit = value["allow_edit"] if "allow_edit" in value else False
             if pfaToUpdate[key].allow_edit:
-                pfaToUpdate[key].allow_read = True
-                pfaToUpdate[key].view_tab = True                
+                pfaToUpdate[key].allow_read = True           
             pfaToUpdate[key].allow_delete = value["allow_delete"] if "allow_delete" in value else False
             if pfaToUpdate[key].allow_delete:
-                pfaToUpdate[key].view_tab = pfaToUpdate[key].allow_read = pfaToUpdate[key].allow_create = pfaToUpdate[key].allow_edit = True
+                pfaToUpdate[key].allow_read = pfaToUpdate[key].allow_create = pfaToUpdate[key].allow_edit = True
 
             #viewToUpdate[key] = session.query(View).filter(View.id== value["view_id"]).first()
             #viewToUpdate[key].view_tab = value["view_tab"] if "view_tab" in value else False

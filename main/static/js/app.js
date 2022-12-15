@@ -58,6 +58,11 @@ function toggleForm(formId) {
     }
 }
 
+
+function autoFillEmail(username) {
+    document.getElementById("employee-email").value = username + "@hrs.com";
+}
+
 function fetchData(tableName, fieldId) {
     let url = '/fetchData/' + tableName
     fetch(url)

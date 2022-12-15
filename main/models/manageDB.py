@@ -21,10 +21,6 @@ def dropDB(db):
 def initializeDB(db):
     results = []
     formData = {}
-    formData["username"] = "admin"
-    formData["email"] = "admin"
-    formData["password"] = "admin"
-    formData["last_name"] = "admin"
 
     #CREATE_VIEWS
     viewList = []
@@ -78,21 +74,21 @@ def initializeDB(db):
     prf4 = Profile(formData)
     results.append(prf4.createProfileWithAccess(db, viewList, formData))
 
-
     formData= {}
     formData["username"] = "admin"
-    formData["email"] = "admin"
+    formData["email"] = "admin@hrs.com"
     formData["password"] = "admin"
     formData["last_name"] = "admin"
     formData["profile_id"] = 1
     
     emp = Employee()
     results.append(emp.createEmployeeForm(db, formData))
+
     formData["username"] = "manager"
     formData["email"] = "manager"
     formData["password"] = "manager"
     formData["last_name"] = "manager"
-    formData["profile_id"] = 2
+    formData["profile_id"] = 1
     emp2 = Employee()
     results.append(emp2.createEmployeeForm(db, formData))
 
