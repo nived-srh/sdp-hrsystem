@@ -24,11 +24,11 @@ def validateUserAccess(db, username, viewUrl, action=None):
         results = access.View().fetchViews(db, queryParams="view_group = \'PUBLIC\'")
         
     for row in results:
-        print( row.view_url , "  asdasdasda ", viewUrl, "asdad", row.view_url in viewUrl)
+        print( row.view_url , "######", viewUrl, "######", row.view_url in viewUrl)
         if row.view_url == "/" and row.view_url == viewUrl:
             return True
         elif row.view_url in viewUrl and row.view_url != "/":
-            print( row.view_url , "  xcvxcvxcvx ", viewUrl)
+            print( row.view_url , "######", viewUrl)
             return True
     return False     
 

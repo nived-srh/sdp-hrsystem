@@ -10,11 +10,13 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.config['SECRET_KEY'] = AppConfig.SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = AppConfig.PERMANENT_SESSION_LIFETIME
+
 db = None
+publicViews = ["/static", "/dropDatabase", "/createDatabase", "/favicon.ico", "/unauthorized", "login", "logout", "register"] 
 
 @app.before_request
 def beforeRequest():
-    if '/static' not in request.path and request.path != "/dropDatabase" and request.path != "/createDatabase" and request.path != "/favicon.ico":
+    if len([ view for view in publicViews if view in request.path and request.path != view]) == 0:
         global db
         if db == None:
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
@@ -23,7 +25,7 @@ def beforeRequest():
         else:
             hasViewAccess = utils.validateUserAccess(db, None, request.path) 
         
-        if not hasViewAccess and request.path != "/unauthorized" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
+        if (not hasViewAccess) and request.path != "/unauthorized" and request.path != "/login" and request.path != "/logout" and request.path != "/dropDatabase" and request.path != "/createDatabase":
             return redirect(url_for('unauthorized'))
 
 @app.route("/")
@@ -73,7 +75,10 @@ def register():
     formData["profile_id"] = candidate_profile[0].id
     response["messages"] = users.Candidate().createCandidateForm(db, formData)
     del formData["password"]
-
+    if "ERROR" not in response["messages"]:
+        result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["email"] + "'", queryLimit="1"))[0]
+        activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
+        session['userSession'] = activeUser
     returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args and request.args.get('returnUrl') != "/login"  else "/"
     return redirect(returnUrl)
 
@@ -237,22 +242,19 @@ def jobportal(table, action, key):
     response["views"] = utils.fetchSidebarLinks(db, None)    
     response["hasSidebar"] = True
     response["formData"] = formData
-    print("asdasdas ", table)
+    print("testest ", table)
     if request.method == 'POST':
         pass
     else:
-        if table == "listing":
-            response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
-            return render_template("jobs.html", response=response)
-        elif table == "apply":
-            response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
-            return render_template("jobs.html", response=response)
-        elif table == "myapplication":
+        if table == "myapplication":
             if 'userSession' not in session:  
                 return render_template("myapplications.html", response=response)
             else:              
                 response["userSession"] = session['userSession']
                 return render_template("myapplications.html", response=response)
+                
+    response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
+    return render_template("jobs.html", response=response)
          
 @app.route("/recruitment",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/recruitment/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
@@ -336,7 +338,7 @@ def managePayroll(table, action, key):
         response["messages"] = request.args.get('msg')
 
     if request.method == 'POST':
-         if action == "create":
+        if action == "create":
             formData = dict(request.form)
             if table == "tiers": 
                 response["messages"] = payroll.Tier().createTierForm(db, formData)
@@ -344,6 +346,16 @@ def managePayroll(table, action, key):
                     return redirect("/payroll/tiers?msg=" + response["messages"]) 
             elif table == "details":
                 response["messages"] = payroll.Payroll().createPayrollForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/details?msg=" + response["messages"]) 
+        elif action == "edit":
+            formData = dict(request.form)
+            if table == "tiers": 
+                response["messages"] = payroll.Tier().editTierForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/tiers?msg=" + response["messages"]) 
+            elif table == "details":
+                response["messages"] = payroll.Payroll().editPayrollForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/payroll/details?msg=" + response["messages"]) 
 
@@ -384,6 +396,7 @@ def managePayroll(table, action, key):
           
     response["formData"] = formData
     response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
+    response["tiers"] = payroll.Tier().fetchTiers(db)    
     return render_template("payroll.html", response=response)       
 
 @app.route("/people",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -545,7 +558,13 @@ def fetchData(table, limit):
         results = access.Profile().fetchProfiles(db)
         response = [{
             "id": row.id , 
-            "profile_name" : row.profile_name    
+            "field_name" : row.profile_name    
+        } for row in results]
+    elif table == "tiers":
+        results = payroll.Tier().fetchTiers(db)
+        response = [{
+            "id": row.id , 
+            "field_name" : row.tier_name    
         } for row in results]
     elif table == "views":
         results = utils.fetchSidebarLinks(db, session['userSession']["username"])    
@@ -559,7 +578,7 @@ def fetchData(table, limit):
         response =str(results)
     if results != None:
         return jsonify({
-            table : response})
+            "results" : response})
     else:
         return jsonify({
              table : []

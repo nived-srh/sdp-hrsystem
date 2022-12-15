@@ -34,7 +34,7 @@
         <div class="d-flex flex-column bd-highlight">
             <div class="pt-2 bd-highlight">
                 <a href="#" id="addEmployeeButton"
-                    onclick="toggleForm('EmployeeForm');fetchData('profiles','#employee_profile_id');"
+                    onclick="toggleForm('EmployeeForm');fetchData('profiles','#employee_profile_id');fetchData('tiers','#employee_tier_id');"
                     style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add
                         Employee</button></a>
             </div>
@@ -96,13 +96,10 @@
                                         <select class="form-control" id="employee_profile_id" name="profile_id">
                                         </select>
                                     </div>
-                                    <div class="col-xs-3">
-                                        <label for="validationCustomUsername">Tier</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="user_role" name="user_role"
-                                                aria-describedby="inputGroupPrepend"
-                                                value="{{response['formData']['user_role']}}">
-                                        </div>
+                                    <div class="col-xs-3 flex-grow-1 mr-4">
+                                        <label for="email">Tier</label>
+                                        <select class="form-control" id="employee_tier_id" name="tier_id">
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">

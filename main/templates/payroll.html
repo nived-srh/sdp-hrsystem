@@ -31,7 +31,9 @@
             <div class="bd-highlight">
                 <div id="PayrollForm" class="PayrollForm">
                     <div class="card containter-fluid mb-3">
-                        <form action="/payroll/details/{{ response['action'] if response['action'] != None else 'create' }}" method="POST" autocomplete="off">
+                        <form
+                            action="/payroll/details/{{ response['action'] if response['action'] != None else 'create' }}"
+                            method="POST" autocomplete="off">
                             <div class="card-body">
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
                                     <div class="col-xs-2 flex-grow-1 ">
@@ -50,8 +52,11 @@
                                             value="{{response['formData']['proll_status']}}">
                                         {% endif %}
                                     </div>
+                                    <input type="hidden" id="payroll_id" name="payroll_id"
+                                        value="{{response['key']}}" />
                                     <div class="col-xs-4 ml-4 pt-4">
-                                        <button type="submit" class="btn btn-primary">{{ "Save" if response["action"] == "edit" else "Create" }}</button>
+                                        <button type="submit" class="btn btn-primary">{{ "Save" if response["action"] ==
+                                            "edit" else "Create" }}</button>
                                     </div>
                                 </div>
                             </div>
@@ -62,7 +67,6 @@
         </div>
 
         {% if response["payrolls"].rowcount > 0 %}
-
         <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
             <thead>
                 <tr class="text-center" style="background-color:#D6EAF8">
@@ -74,9 +78,11 @@
             <tbody>
                 {% for item in response["payrolls"] %}
                 <tr>
-                    <td class="text-center"><a href="/payroll/details/edit/{{item.id}}"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+                    <td class="text-center"><a href="/payroll/details/edit/{{item.id}}"><i
+                                class="fa-solid fa-edit fa-flip-horizontal "></i></a>
                     </td>
-                    <td class="text-center"><a href="/payroll/details/delete/{{item.id}}"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a>
+                    <td class="text-center"><a href="/payroll/details/delete/{{item.id}}"><i
+                                class="fa-solid fa-trash fa-flip-horizontal"></i></a>
                     </td>
                     <td>{{item.proll_year}} / {{item.proll_month}}</td>
                     <td>{{item.proll_status}}</td>
@@ -92,7 +98,6 @@
         {% endif %}
     </div>
 
-
     <div id="Tiers" class="tabcontent">
         <div class="d-flex flex-column bd-highlight">
             <div class="pt-2 bd-highlight">
@@ -104,9 +109,11 @@
                 <div id="TiersForm" class="TiersForm">
                     <div class="card containter-fluid mb-3">
                         <div class="card-header">
-                            Add Tiers
+                            {{ response['action']|title if response['action'] != None else 'Add' }} Tiers
                         </div>
-                        <form action="/payroll/tiers/create" method="POST" autocomplete="off">
+                        <form
+                            action="/payroll/tiers/{{ response['action'] if response['action'] != None else 'create' }}"
+                            method="POST" autocomplete="off">
                             <div class="card-body">
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
                                     <div class="col-xs-2 flex-grow-1 ">
@@ -129,9 +136,10 @@
                                     <div class="col-xs-3 flex-grow-1">
                                         <label for="tier_descr">Description</label>
                                         <textarea class="form-control" id="tier_descr" name="tier_descr" type="textarea"
-                                            value="{{response['formData']['tier_descr']}}" rows="3"></textarea>
+                                            rows="3">{{response['formData']['tier_descr']}}</textarea>
                                     </div>
                                 </div>
+                                <input type="hidden" id="tier_id" name="tier_id" value="{{response['key']}}" />
                             </div>
                             <div class="card-footer">
                                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -151,23 +159,25 @@
             <thead>
                 <tr class="text-center" style="background-color:#D6EAF8">
                     <th scope="col" colspan="2" style="width:10%">Action</th>
-                    <th scope="col">Username</th>
-                    <th scope="col">First Name</th>
-                    <th scope="col">Last Name</th>
-                    <th scope="col">Email</th>
+                    <th scope="col">Tier Name</th>
+                    <th scope="col">Tier Description</th>
+                    <th scope="col">Payscale (Monthly)</th>
+                    <th scope="col">Is Active</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in response["tiers"] %}
                 <tr>
-                    <td class="text-center"><a href="#edit"><i class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+                    <td class="text-center"><a href="/payroll/tiers/edit/{{item.id}}"><i
+                                class="fa-solid fa-edit fa-flip-horizontal "></i></a>
                     </td>
-                    <td class="text-center"><a href="#delete"><i class="fa-solid fa-trash fa-flip-horizontal"></i></a>
+                    <td class="text-center"><a href="/payroll/tiers/delete/{{item.id}}"><i
+                                class="fa-solid fa-trash fa-flip-horizontal"></i></a>
                     </td>
-                    <td>{{item.username}}</td>
-                    <td>{{item.first_name}}</td>
-                    <td>{{item.last_name}}</td>
-                    <td>{{item.email}}</td>
+                    <td>{{item.tier_name}}</td>
+                    <td>{{item.tier_descr}}</td>
+                    <td>{{item.tier_payscale}}</td>
+                    <td>{{item.tier_active}}</td>
                 </tr>
                 {% endfor %}
             </tbody>

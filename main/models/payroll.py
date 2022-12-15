@@ -17,8 +17,8 @@ class Tier(base.Model):
             self.tier_name = formData["tier_name"]
             self.tier_descr = formData["tier_descr"] if "tier_descr" in formData else ""
             self.tier_payscale = formData["tier_payscale"] if "tier_payscale" in formData else 0
-            self.tier_active = formData["tier_active"] if "tier_active" in formData else False
-            self.tier_default = formData["tier_default"] if "tier_default" in formData else False
+            self.tier_active = True if "tier_active" in formData else False
+            self.tier_default = True if "tier_default" in formData else False
 
     def createTierForm(self, db, formData):
         self.__init__(formData)
@@ -104,8 +104,9 @@ class Payroll(base.Model):
     def editPayrollForm(self, db, formData):
         session = db.initiateSession()
         recordToEdit = session.query(Payroll).filter(Payroll.id==formData["payroll_id"]).first()
-        recordToEdit.proll_month = formData["proll_month"] 
-        recordToEdit.proll_year = formData["proll_year"] 
+        period = formData["proll_period"].split("-")
+        self.proll_month = period[1]
+        self.proll_year = period[0]
         recordToEdit.proll_status = formData["proll_status"] 
         commitStatus = db.commitSession(session)
         return commitStatus

@@ -45,7 +45,7 @@ $( document ).ready(function() {
         }else if(people_data.table == "tiers"){
             document.getElementById("manageTiers").click();
             if(people_data.action == "create" || people_data.action == "edit"){
-                toggleForm('Tiers');
+                toggleForm('TiersForm');
             }
         }
     }
@@ -71,11 +71,11 @@ function fetchData(tableName, fieldId) {
         return response.json();
     })
     .then(function(data) {
-        console.log(data.profiles);
+        console.log(data.results);
         let dropdown = $(fieldId);
         dropdown.empty();
-        for (var i = 0; i < data.profiles.length; i++) {
-            dropdown.append($('<option></option>').attr('value', data.profiles[i].id).text( data.profiles[i].profile_name));
+        for (var i = 0; i < data.results.length; i++) {
+            dropdown.append($('<option></option>').attr('value', data.results[i].id).text( data.results[i].field_name));
         }
     });
 }
