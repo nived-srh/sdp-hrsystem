@@ -45,6 +45,11 @@ $( document ).ready(function() {
             if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('Payroll');
             }
+        }else if(people_data.table == "tiers"){
+            document.getElementById("manageTiers").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('Tiers');
+            }
         }
     }
 });
@@ -56,7 +61,6 @@ function toggleForm(formId) {
         document.getElementById(formId).style.display = "block";
     }
 }
-
 
 function autoFillEmail(username) {
     document.getElementById("employee-email").value = username + "@hrs.com";

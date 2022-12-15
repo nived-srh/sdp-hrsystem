@@ -15,7 +15,6 @@ class JobListing(base.Model):
     children = relationship("JobApplication", back_populates="jobListing")
 
     def __init__(self, formData = None):
-        pass
         if formData != None:
             self.job_title = formData["job_title"]
             self.job_descr = formData["job_descr"] if "job_descr" in formData else ""

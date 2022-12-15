@@ -89,7 +89,7 @@ body{
 }
 
 /* Style the tab content */
-.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm, .ProfileForm, .JobListingForm, .PayrollForm {
+.tabcontent, .profileForm, .viewForm, .EmployeeForm, .ConsultantForm, .ContractorForm, .ProfileForm, .JobListingForm, .PayrollForm, .TiersForm {
     display: none;
     margin-top:10px;
 }  

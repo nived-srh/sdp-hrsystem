@@ -118,10 +118,10 @@ def globalSearch():
 
     return render_template("search.html", response=response)
 
-@app.route("/jobs")
-@app.route("/jobs/apply")
-@app.route("/jobs/myapplication")
-def jobportal():
+@app.route("/jobs", defaults={'key': None })
+@app.route("/jobs/apply/<key>", methods=['GET', 'POST'])
+@app.route("/jobs/myapplication", defaults={'key': None })
+def jobportal(key):
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
@@ -132,8 +132,10 @@ def jobportal():
     response["formData"] = formData
     
     if request.path == "/jobs":
-        response["joblistings"] = jobs.JobListing().fetchJobListings(db)
+        response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
         return render_template("jobs.html", response=response)
+    elif request.path == "/jobs/apply":
+        pass
     elif request.path == "/jobs/myapplication":
         if 'userSession' not in session:  
             return render_template("myapplications.html", response=response)
