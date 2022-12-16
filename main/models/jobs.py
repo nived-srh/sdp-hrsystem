@@ -78,27 +78,31 @@ class JobApplication(base.Model):
 
     def __init__(self, formData = None):
         if formData != None:
-            self.job_id = formData["job_title"]
-            self.job_descr = formData["job_descr"] if "job_descr" in formData else ""
-            self.job_exp = formData["job_exp"] if "job_exp" in formData else ""
-            self.job_role = formData["job_role"] if "job_exp" in formData else ""
-            self.job_status = formData["job_status"] if "job_exp" in formData else "OPEN"
+            self.job_id = formData["job_id"]
+            self.candidate_id = formData["candidate_id"]
+            self.application_status = formData["application_status"] if "application_status" in formData else "APPLIED"
 
-    def createJobListing(self, db, formData):
-        self.__init__(formData)
-        return self.createJobListing(db)
+    def createJobApplicationForm(self, db, formData):
+        if "job_id" in formData and "candidate_id" in formData:
+            self.__init__(formData)
+            return self.createJobApplication(db)
+        return "ERROR_MISSING_REQUIRED_IDS"
 
-    def createJobListing(self, db):
+    def createJobApplication(self, db):
         try:
             session = db.initiateSession()
             session.add(self)
             commitStatus = db.commitSession(session)
             if commitStatus == "SUCCESS":
-                return "INSERTED_JOBLISTING"
+                return "INSERTED_JOBAAPLICATION"
             else:
                 return "ERROR_" + commitStatus
         except Exception as err:
             return "ERROR : " + str(err)
 
-    def fetchJobListing(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('joblisting', queryFields, queryParams, queryLimit)
+    def fetchJobApplication(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('jobapplication', queryFields, queryParams, queryLimit)
+        
+    def fetchJobApplicationWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id "
+        return db.fetchData('jobapplication, joblisting, candidate', queryFields, queryParams, queryLimit)

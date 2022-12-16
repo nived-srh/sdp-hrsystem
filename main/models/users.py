@@ -1,5 +1,5 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence, LargeBinary
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -13,7 +13,7 @@ class Person(base.Model):
     hashed_password = Column(String, nullable=False)
     last_name = Column(String, nullable=False, index=True)
     first_name = Column(String, index=True)
-    salutation = Column(String, index=True)
+    salutation = Column(String)
     addr_line = Column(String)
     addr_city = Column(String)
     addr_state = Column(String)
@@ -30,8 +30,8 @@ class Person(base.Model):
             self.email = formData["email"]
             self.username = formData["username"]
             self.last_name = formData["last_name"]
-            self.salutation = formData["salutation"]
             self.first_name = formData["first_name"] if "first_name" in formData else ""
+            self.salutation = formData["salutation"] if "salutation" in formData else ""
             self.addr_line = formData["addr_line"] if "addr_line" in formData else ""
             self.addr_city = formData["addr_city"] if "addr_city" in formData else ""
             self.addr_state = formData["addr_state"] if "addr_state" in formData else ""
@@ -52,8 +52,7 @@ class Person(base.Model):
                         return row
                     else:
                         return "ERROR_INVALID_CREDENTIALS"
-            else: 
-                return "ERROR_USER_NOT_FOUND"
+            return "ERROR_USER_NOT_FOUND"
         except Exception as err:
             return "ERROR : " + str(err)
 
@@ -198,26 +197,25 @@ class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
-    cv_file = Column(String)
-    '''edu_school = Column(String)
-    edu_school_name = Column(String)
-    edu_school_grade = Column(String)
-    edu_school_year = Column(String)
-    edu_ug = Column(String)
-    edu_ug_name = Column(String)
-    edu_ug_grade = Column(String)
-    edu_ug_year = Column(String)
-    edu_grad = Column(String)
-    edu_grad_name = Column(String)
-    edu_grad_grade = Column(String)
-    edu_grad_year = Column(String)'''
+    resume_filename = Column(String)
+    resume_filedata = Column(LargeBinary)
+    edu_hightest = Column(String)
+    edu_hightest_institution = Column(String)
+    edu_hightest_grade = Column(String)
+    edu_hightest_year = Column(String)
+    linkedin_username = Column(String)
 
-    def __init__(self):
+    def __init__(self, formData = None):
         pass
 
     def createCandidateForm(self, db, formData):
         self.user_type = "candidate"
-        formData["email"] = formData["username"]
+        self.email = formData["username"]
+        self.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else ""
+        self.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else ""
+        self.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
+        self.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else ""
+        self.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
         super(Candidate, self).__init__(formData) 
         existingUsers = self.fetchByUsername(db, self.username)
         if existingUsers == None or list(existingUsers) == []:
@@ -230,12 +228,24 @@ class Candidate(Person):
             session = db.initiateSession()                
             session.add(self)
             commitStatus = db.commitSession(session, False)
-            if commitStatus != "SUCCESS":
+            if commitStatus == "SUCCESS":
                 return "INSERTED_CANDIDATE"
             else:
                 return "COMMIT_ERROR_" + commitStatus
         except Exception as err:
             return "ERROR : " + str(err)
 
+    def uploadResume(self, db, formData):
+        session = db.initiateSession()
+        candidateToEdit = session.query(Candidate).filter(Person.id==formData["candidate_id"]).first()
+        candidateToEdit.resume_filename = formData["candidate_resume"].filename
+        candidateToEdit.resume_filedata = formData["candidate_resume"].read()
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
+    def fetchCandidateById(self, db, key):
+        session = db.initiateSession()
+        return session.query(Candidate).filter(Person.id==key).first()
+
     def fetchCandidatesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('candidate, person, profile', queryFields, queryParams, queryLimit)    
+        return db.fetchData('candidate, person', queryFields, queryParams, queryLimit)    

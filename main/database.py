@@ -33,10 +33,7 @@ class DatabaseConnect():
         return self.session
     
     def closeSession(self, session):
-        if self.session == session:
-            session.close()
-            self.session = None
-        else:
+        if session != None:
             session.close()
 
     def commitSession(self, session, autoClose = True):
