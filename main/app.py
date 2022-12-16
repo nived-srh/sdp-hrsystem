@@ -152,26 +152,93 @@ def profile():
     response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
     return render_template("profile.html", response=response)       
         
-@app.route("/accounts", methods=["GET", "POST"])
-def accounts():
+@app.route("/accounts",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/accounts/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
+@app.route("/accounts/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
+@app.route("/accounts/<table>/<action>/<key>", methods=['GET','POST'])
+def manageAccounts(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
-        
+    # if table == None:
+    #     return redirect("/payroll/details")    
+
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    response = {}
+    response = formData = {}
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+    formData['proll_period'] = date.today().strftime("%Y-%m")    
 
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')  
+        
     if request.method == 'POST':
-        pass
-    else:        
-        pass
-    response["accounts"] = None #services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
-    return render_template("accounts.html", response=response)       
+        if action == "create":
+            formData = dict(request.form)
+            if table == "tiers": 
+                response["messages"] = payroll.Tier().createTierForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/tiers?msg=" + response["messages"]) 
+            elif table == "details":
+                response["messages"] = payroll.Payroll().createPayrollForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/details?msg=" + response["messages"]) 
+        elif action == "edit":
+            formData = dict(request.form)
+            if table == "tiers": 
+                response["messages"] = payroll.Tier().editTierForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/tiers?msg=" + response["messages"]) 
+            elif table == "details":
+                response["messages"] = payroll.Payroll().editPayrollForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/details?msg=" + response["messages"]) 
+
+    if key != None:        
+        if action == "read":            
+            pass
+        elif action == "edit":
+            if table == "tiers": 
+                result = payroll.Tier().fetchByTierId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['tier_name'] = row.tier_name        
+                        formData['tier_descr'] = row.tier_descr        
+                        formData['tier_payscale'] = row.tier_payscale        
+                        formData['tier_active'] = row.tier_active                
+            elif table == "details": 
+                result = payroll.Payroll().fetchByPayrollId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['proll_period'] = row.proll_year + "-" + row.proll_month
+                        formData['proll_status'] = row.proll_status
+        elif action == "delete":
+            formData = dict(request.form)
+            if table == "tiers": 
+                result = payroll.Tier().deleteTier(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/payroll/tiers?msg=" + result)
+                else:
+                    response["messages"] = result    
+            elif table == "details":    
+                result = payroll.Payroll().deletePayroll(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/payroll/details?msg=" + result)
+                else:
+                    response["messages"] = result     
+    elif key == None and action != None and table != None and request.method == 'GET':
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
+          
+    response["formData"] = formData
+    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
+    response["tiers"] = payroll.Tier().fetchTiers(db)    
+    return render_template("payroll.html", response=response)       
         
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
