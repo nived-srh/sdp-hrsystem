@@ -31,6 +31,7 @@ $( document ).ready(function() {
             if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('EmployeeForm');
                 fetchData('profiles','#employee_profile_id');
+                fetchData('tiers','#employee_tier_id');
             }
         }else if(people_data.table == "profiles"){
             if(people_data.action == "create" || people_data.action == "edit"){
@@ -46,6 +47,13 @@ $( document ).ready(function() {
             document.getElementById("manageTiers").click();
             if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('TiersForm');
+            }
+        }else if(people_data.table == "records"){
+            document.getElementById("manageAccounts").click();
+        }else if(people_data.table == "Accounts"){
+            document.getElementById("manageProjects").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('AccountsForm');
             }
         }
     }

@@ -1,10 +1,9 @@
 {% extends "main.html" %}
 
 {% block content %}
-<div class="container-fluid p-5">
+<div class="container-fluid px-5">
     <h1 class="mb-4">Jobs</h1>
     
-    {% if "joblistings" in response["joblistings"] and response["joblistings"] != None %}
     {% if response["joblistings"].rowcount > 0 %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
         <thead>
@@ -21,7 +20,7 @@
         <tbody>
             {% for item in response["joblistings"] %}
             <tr>
-                <td class="text-center"><a href="/jobs/apply/{{item.id}}">Apply</a>
+                <td class="text-center"><a href="/jobs/listing/apply/{{item.id}}">Apply</a>
                 </td>
                 <td>{{item.job_title}}</td>
                 <td>{{item.job_descr}}</td>
@@ -33,7 +32,6 @@
             {% endfor %}
         </tbody>
     </table>
-    {% endif %}    
     {% else %}
     <p class="text-center text-muted">
         No open job listins found. Please check back another time.

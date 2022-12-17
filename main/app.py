@@ -1,5 +1,6 @@
-from flask import Flask, request, session, jsonify, render_template, redirect, url_for
+from flask import Flask, request, session, jsonify, render_template, redirect, url_for, send_file
 from flask_cors import CORS
+from io import BytesIO
 from datetime import date, timedelta
 from .config import AppConfig
 from .database import DatabaseConnect
@@ -12,7 +13,7 @@ app.config['SECRET_KEY'] = AppConfig.SECRET_KEY
 app.config['PERMANENT_SESSION_LIFETIME'] = AppConfig.PERMANENT_SESSION_LIFETIME
 
 db = None
-publicViews = ["/static", "/dropDatabase", "/createDatabase", "/favicon.ico", "/unauthorized", "login", "logout", "register"] 
+publicViews = ["/static", "dropDatabase", "createDatabase", "favicon.ico", "unauthorized", "login", "logout"] 
 
 @app.before_request
 def beforeRequest():
@@ -60,27 +61,6 @@ def login():
         else:
             response["messages"] = result
     return render_template("login.html", response=response)
-
-@app.route("/register", methods=['POST'])
-def register():
-    response = { 'table' : 'register'}
-    
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-    
-    response = formData = {}
-    formData = dict(request.form)
-    candidate_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CANDIDATE'", queryLimit="1"))
-    formData["profile_id"] = candidate_profile[0].id
-    response["messages"] = users.Candidate().createCandidateForm(db, formData)
-    del formData["password"]
-    if "ERROR" not in response["messages"]:
-        result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["email"] + "'", queryLimit="1"))[0]
-        activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
-        session['userSession'] = activeUser
-    returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args and request.args.get('returnUrl') != "/login"  else "/"
-    return redirect(returnUrl)
 
 @app.route('/logout')
 def logout():
@@ -159,8 +139,8 @@ def profile():
 def manageAccounts(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
-    # if table == None:
-    #     return redirect("/payroll/details")    
+    if table == None:
+        return redirect("/accounts/records")    
 
     global db
     if db == None:
@@ -173,72 +153,73 @@ def manageAccounts(table, action, key):
     response["table"] = table
     response["action"] = action
     response["key"] = key
-    formData['proll_period'] = date.today().strftime("%Y-%m")    
+    # formData['proll_period'] = date.today().strftime("%Y-%m")    
 
     if request.args.get('msg') != None:
-        response["messages"] = request.args.get('msg')  
-        
+        response["messages"] = request.args.get('msg')
+
     if request.method == 'POST':
         if action == "create":
             formData = dict(request.form)
-            if table == "tiers": 
-                response["messages"] = payroll.Tier().createTierForm(db, formData)
+            if table == "accounts": 
+                response["messages"] = accounts.Account().createAccountForm(db, formData)
                 if "ERROR" not in response["messages"]:
-                    return redirect("/payroll/tiers?msg=" + response["messages"]) 
-            elif table == "details":
-                response["messages"] = payroll.Payroll().createPayrollForm(db, formData)
+                    return redirect("/accounts/projects?msg=" + response["messages"]) 
+            elif table == "records":
+                response["messages"] = accounts.Account().createAccountForm(db, formData)
                 if "ERROR" not in response["messages"]:
-                    return redirect("/payroll/details?msg=" + response["messages"]) 
+                    return redirect("/accounts/records?msg=" + response["messages"]) 
         elif action == "edit":
             formData = dict(request.form)
-            if table == "tiers": 
-                response["messages"] = payroll.Tier().editTierForm(db, formData)
+            if table == "accounts": 
+                response["messages"] = accounts.Project().editProjectForm()(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/payroll/tiers?msg=" + response["messages"]) 
             elif table == "details":
-                response["messages"] = payroll.Payroll().editPayrollForm(db, formData)
+                response["messages"] = accounts.Account().editAccountForm(db, formData)
                 if "ERROR" not in response["messages"]:
-                    return redirect("/payroll/details?msg=" + response["messages"]) 
+                    return redirect("/accounts/records?msg=" + response["messages"]) 
 
     if key != None:        
         if action == "read":            
             pass
         elif action == "edit":
-            if table == "tiers": 
-                result = payroll.Tier().fetchByTierId(db, list(key))
+            if table == "accounts": 
+                
+                result = accounts.Project().fetchByProjectId(db, list(key))
                 if result != None:
                     for row in result:   
-                        formData['tier_name'] = row.tier_name        
-                        formData['tier_descr'] = row.tier_descr        
-                        formData['tier_payscale'] = row.tier_payscale        
-                        formData['tier_active'] = row.tier_active                
-            elif table == "details": 
-                result = payroll.Payroll().fetchByPayrollId(db, list(key))
+                        formData['id'] = row.id       
+                        formData['description'] = row.description      
+                        formData['account_id'] = row.account_id                      
+            elif table == "records": 
+                result =  accounts.Account().fetchByAccountId(db, list(key))
                 if result != None:
                     for row in result:   
-                        formData['proll_period'] = row.proll_year + "-" + row.proll_month
-                        formData['proll_status'] = row.proll_status
+                        formData['acc_name'] = row.acc_name
+                        formData['acc_type'] = row.acc_type
+                        formData['acc_status'] = row.acc_status
         elif action == "delete":
             formData = dict(request.form)
-            if table == "tiers": 
-                result = payroll.Tier().deleteTier(db, list(key))
+            if table == "accounts": 
+                result =  accounts.Project().deleteProject(db, list(key))
                 if result == "SUCCESS":
-                    return redirect("/payroll/tiers?msg=" + result)
+                    return redirect("/accounts/projects?msg=" + result)
                 else:
                     response["messages"] = result    
             elif table == "details":    
-                result = payroll.Payroll().deletePayroll(db, list(key))
+                result = accounts.Account().deleteAccount(db, list(key))
                 if result == "SUCCESS":
-                    return redirect("/payroll/details?msg=" + result)
+                    return redirect("/accounts/records?msg=" + result)
                 else:
                     response["messages"] = result     
     elif key == None and action != None and table != None and request.method == 'GET':
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
           
     response["formData"] = formData
-    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
-    response["tiers"] = payroll.Tier().fetchTiers(db)    
-    return render_template("payroll.html", response=response)       
+    response["accounts"] = accounts.Account().fetchAccounts(db)    
+    response["projects"] = accounts.Project().fetchProjects(db)    
+    return render_template("accounts.html", response=response)   
         
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
@@ -309,19 +290,69 @@ def jobportal(table, action, key):
     response["views"] = utils.fetchSidebarLinks(db, None)    
     response["hasSidebar"] = True
     response["formData"] = formData
-    print("testest ", table)
+
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
     if request.method == 'POST':
-        pass
+        formData = dict(request.form)
+        if table == "resume":
+            if action == "create":
+                candidate_resume = request.files["candidate_resume"]
+                formData["candidate_id"] = session["userSession"]["id"]
+                formData["candidate_resume"] = candidate_resume
+                response["messages"] = users.Candidate().uploadResume(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return render_template("myapplications.html", response=response)
+        elif table == "candidate":
+            candidate_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CANDIDATE'", queryLimit="1"))
+            formData["profile_id"] = candidate_profile[0].id
+            response["messages"] = users.Candidate().createCandidateForm(db, formData)
+            del formData["password"]
+            if "ERROR" not in response["messages"]:
+                result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["username"] + "'", queryLimit="1"))[0]
+                activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
+                session['userSession'] = activeUser
+                returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args else "/jobs/listing"
+                return redirect(returnUrl)
+            return render_template("myapplications.html", response=response)
     else:
-        if table == "myapplication":
-            if 'userSession' not in session:  
+        if 'userSession' not in session:  
+            if table != "listing":
                 return render_template("myapplications.html", response=response)
-            else:              
-                response["userSession"] = session['userSession']
-                return render_template("myapplications.html", response=response)
-                
-    response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
-    return render_template("jobs.html", response=response)
+        else:
+            response["userSession"] = session['userSession'] 
+
+        if table == "resume" and action == "download" and key != None:
+            candidate = users.Candidate().fetchCandidateById(db, key) 
+            return send_file(BytesIO(candidate.resume_filedata), download_name= candidate.resume_filename, as_attachment=True)
+        elif table == "resume" :
+            return render_template("myapplications.html", response=response)
+        elif table == "listing" and action == "apply" and key != None :
+            formData["job_id"] = key
+            formData["candidate_id"] = session["userSession"]["id"]
+            response["messages"] = jobs.JobApplication().createJobApplicationForm(db, formData)
+            if "ERROR" not in response["messages"]:
+                return redirect("/jobs/myapplication?msg=" + response["messages"])
+            return render_template("jobs.html", response=response)
+        elif table == "myapplication":
+            queryParams = " person.user_type = 'candidate' AND person.id = candidate.id and username = '" + session["userSession"]["username"] + "' "
+            candidate = list(users.Candidate().fetchCandidatesWithDetails(db, None, queryParams, queryLimit="1"))[0] 
+            formData["last_name"] = candidate.last_name
+            formData["first_name"] = candidate.first_name
+            formData["email"] = candidate.email
+            formData["resume_filename"] = candidate.resume_filename
+            formData["linkedin_username"] = candidate.linkedin_username
+            formData["edu_hightest"] = candidate.linkedin_username
+            formData["edu_hightest_institution"] = candidate.linkedin_username
+            formData["edu_hightest_grade"] = candidate.edu_hightest_grade
+            formData["edu_hightest_year"] = candidate.edu_hightest_year
+            response["formData"] = formData
+
+            response["jobapplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)
+            return render_template("myapplications.html", response=response)
+        response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
+        return render_template("jobs.html", response=response)
          
 @app.route("/recruitment",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/recruitment/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
