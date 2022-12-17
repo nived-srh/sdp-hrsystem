@@ -74,9 +74,12 @@ class Project(base.Model):
     children = relationship("ProjectAssignment", back_populates="project")
     def __init__(self, formData = None):
         if formData != None:
-            self.acc_name = formData["acc_name"]
-            self.acc_type = formData["acc_type"] if "acc_type" in formData else ""
-            self.acc_status = formData["acc_status"] if "acc_status" in formData else ""
+            self.description = formData["description"] if "description" in formData else ""
+            self.account_id = formData["account_id"] if "account_id" in formData else ""
+            if "account_id" in formData:
+                self.account_id = formData["account_id"]
+            elif "account" in formData:
+                self.account = formData["account"]
 
     def createProjectForm(self, db, formData):
         self.__init__(formData)
