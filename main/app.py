@@ -1,4 +1,4 @@
-from flask import Flask, request, session, jsonify, render_template, redirect, url_for, send_file
+from flask import Flask, request, session, jsonify, render_template, redirect, url_for, send_file, make_response
 from flask_cors import CORS
 from io import BytesIO
 from datetime import date, timedelta
@@ -6,6 +6,7 @@ from .config import AppConfig
 from .database import DatabaseConnect
 from .models import *
 from . import utils 
+import base64
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -53,13 +54,15 @@ def login():
             db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
         
         result = users.Person().validatePerson(db, request.form['username'], request.form['password'] )
-        returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args and request.args.get('returnUrl') != "/login"  else "/"
+        returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args else "/"
         if result != None and "ERROR" not in result:
-            activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
+            activeUser = { 'baseUrl' : '/' if result.user_type != 'candidate' else '/jobs/myapplication' , 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
             session['userSession'] = activeUser
-            return redirect(returnUrl)
+            return redirect(activeUser['baseUrl'])
         else:
             response["messages"] = result
+            if returnUrl == '/jobs/myapplication':
+                return redirect('/jobs/myapplication?msg=' + response["messages"])
     return render_template("login.html", response=response)
 
 @app.route('/logout')
@@ -206,6 +209,25 @@ def vacation():
     response["leaveHistory"] = services.DailyStatus().fetchDailyStatusByUsername(db,  session['userSession']['id'])    
     return render_template("vacation.html", response=response)              
 
+
+@app.route("/itresources", methods=["GET", "POST"])
+def itResources():
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    response = formData = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+
+    response["resources"] = infrastructure.ITResource().fetchITResources(db)
+    response["formData"] = formData
+    return render_template("itresource.html", response=response)
+
 @app.route("/jobs",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/jobs/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/jobs/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
@@ -222,12 +244,16 @@ def jobportal(table, action, key):
     response["views"] = utils.fetchSidebarLinks(db, None)    
     response["hasSidebar"] = True
     response["formData"] = formData
+    response["action"] = action
+    response["key"] = key
+    response["formData"]["date_of_birth"] = "2004-01-01"
 
     if request.args.get('msg') != None:
         response["messages"] = request.args.get('msg')
 
     if request.method == 'POST':
         formData = dict(request.form)
+        response["formData"] = formData
         if table == "resume":
             if action == "create":
                 candidate_resume = request.files["candidate_resume"]
@@ -235,22 +261,35 @@ def jobportal(table, action, key):
                 formData["candidate_resume"] = candidate_resume
                 response["messages"] = users.Candidate().uploadResume(db, formData)
                 if "ERROR" not in response["messages"]:
-                    return render_template("myapplications.html", response=response)
+                    return redirect("/jobs/myapplication")
         elif table == "candidate":
-            candidate_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CANDIDATE'", queryLimit="1"))
-            formData["profile_id"] = candidate_profile[0].id
-            response["messages"] = users.Candidate().createCandidateForm(db, formData)
-            del formData["password"]
-            if "ERROR" not in response["messages"]:
-                result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["username"] + "'", queryLimit="1"))[0]
-                activeUser = { 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
-                session['userSession'] = activeUser
-                returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args else "/jobs/listing"
-                return redirect(returnUrl)
+            if action == "register":
+                response["messages"] = utils.validateFormData(formData)
+                if "ERROR" in response["messages"]:
+                    return render_template("myapplications.html", response=response)
+                candidate_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CANDIDATE'", queryLimit="1"))
+                formData["profile_id"] = candidate_profile[0].id
+                response["messages"] = users.Candidate().createCandidateForm(db, formData)
+                del formData["password"]
+                if "ERROR" not in response["messages"]:
+                    result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["username"] + "'", queryLimit="1"))[0]
+                    activeUser = { 'baseUrl' : '/' if result.user_type != 'candidate' else '/jobs/myapplication' , 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}            
+                    session['userSession'] = activeUser
+                    returnUrl = request.args.get('returnUrl') if 'returnUrl' in request.args else activeUser['baseUrl']
+                    return redirect(returnUrl)
+            elif action == "edit":
+                response["messages"] = users.Candidate().editCandidateForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["email"] + "'", queryLimit="1"))[0]
+                    activeUser = { 'baseUrl' : '/' if result.user_type != 'candidate' else '/jobs/myapplication' , 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}         
+                    session.pop('userSession', None)
+                    session['userSession'] = activeUser
+                    response['userSession'] = session
+                    return redirect("/jobs/myapplication?msg=" + response["messages"])
             return render_template("myapplications.html", response=response)
     else:
         if 'userSession' not in session:  
-            if table != "listing":
+            if table != "listing" or ( table == "listing" and action == "apply"):
                 return render_template("myapplications.html", response=response)
         else:
             response["userSession"] = session['userSession'] 
@@ -263,26 +302,34 @@ def jobportal(table, action, key):
         elif table == "listing" and action == "apply" and key != None :
             formData["job_id"] = key
             formData["candidate_id"] = session["userSession"]["id"]
-            response["messages"] = jobs.JobApplication().createJobApplicationForm(db, formData)
+            response["messages"] = "SUCCESS" #users.Candidate().validateCandidateOnApply(db, formData["candidate_id"])
             if "ERROR" not in response["messages"]:
-                return redirect("/jobs/myapplication?msg=" + response["messages"])
-            return render_template("jobs.html", response=response)
+                response["messages"] = jobs.JobApplication().createJobApplicationForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/jobs/myapplication?msg=" + response["messages"])
+            #return render_template("jobs.html", response=response)
+            
         elif table == "myapplication":
-            queryParams = " person.user_type = 'candidate' AND person.id = candidate.id and username = '" + session["userSession"]["username"] + "' "
-            candidate = list(users.Candidate().fetchCandidatesWithDetails(db, None, queryParams, queryLimit="1"))[0] 
-            formData["last_name"] = candidate.last_name
-            formData["first_name"] = candidate.first_name
-            formData["email"] = candidate.email
-            formData["resume_filename"] = candidate.resume_filename
-            formData["linkedin_username"] = candidate.linkedin_username
-            formData["edu_hightest"] = candidate.linkedin_username
-            formData["edu_hightest_institution"] = candidate.linkedin_username
-            formData["edu_hightest_grade"] = candidate.edu_hightest_grade
-            formData["edu_hightest_year"] = candidate.edu_hightest_year
-            response["formData"] = formData
+            if action == "delete":
+                response["messages"] = jobs.JobApplication().deleteJobApplication(db, list(key))
+                if "ERROR" not in response["messages"]:
+                    return redirect("/jobs/myapplication?msg=" + response["messages"])
+            else:
+                queryParams = " person.user_type = 'candidate' AND person.id = candidate.id and username = '" + session["userSession"]["username"] + "' "
+                candidate = list(users.Candidate().fetchCandidatesWithDetails(db, None, queryParams, queryLimit="1"))[0] 
+                formData["last_name"] = candidate.last_name
+                formData["first_name"] = candidate.first_name
+                formData["email"] = candidate.email
+                formData["resume_filename"] = candidate.resume_filename
+                formData["linkedin_username"] = candidate.linkedin_username
+                formData["edu_hightest"] = candidate.linkedin_username
+                formData["edu_hightest_institution"] = candidate.linkedin_username
+                formData["edu_hightest_grade"] = candidate.edu_hightest_grade
+                formData["edu_hightest_year"] = candidate.edu_hightest_year
+                response["formData"] = formData
 
-            response["jobapplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)
-            return render_template("myapplications.html", response=response)
+                response["jobapplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)
+                return render_template("myapplications.html", response=response)
         response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
         return render_template("jobs.html", response=response)
          
@@ -307,6 +354,10 @@ def recruitment(table, action, key):
     response["action"] = action
     response["key"] = key
 
+    response['returnUrl'] = "/recruitment/joblisting"
+    if request.args.get('returnUrl') != None:
+        response["returnUrl"] = request.args.get('returnUrl')
+
     if request.method == 'POST':
         if action == "create":
             formData = dict(request.form)
@@ -315,7 +366,28 @@ def recruitment(table, action, key):
     
     if key != None:        
         if action == "read":
-            pass
+            if table == "joblisting":    
+                queryParams = " id = '" + key + "' ORDER BY job_role, id DESC"             
+                response["joblisting"] = jobs.JobListing().fetchJobListings(db, queryParams)
+                queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND joblisting.id = '" + key + "' "
+                response["candidateApplications"] = jobs.JobListing().fetchJobListings(db, queryParams)
+            elif table == "candidate":
+                response["candidateDetails"] = users.Candidate().fetchCandidateById(db, key)
+                response["candidateApplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)                
+            return render_template("recruitment.html", response=response)       
+        elif action == "resume":
+            candidateToRead = users.Candidate().fetchCandidateById(db, key)
+            response = make_response(candidateToRead.resume_filedata)
+            response.headers["Content-Type"] = "application/pdf"
+            response.headers["Content-Disposition"] = "inline; filename = %s.pdf" % candidateToRead.resume_filename    
+            return response     
+        elif action == "downloadresume":            
+            candidate = users.Candidate().fetchCandidateById(db, key) 
+            return send_file(BytesIO(candidate.resume_filedata), download_name= candidate.resume_filename, as_attachment=True)
+        elif (action == "hired" or action == "rejected" or action == "shortlisted") and table == "candidate":
+            response["messages"] = jobs.JobApplication().updateApplicationStatus(db, key, action.upper())
+            if "ERROR" not in response["messages"]:
+                return redirect(response["returnUrl"])
         elif action == "edit":
             if table == "joblisting": 
                 result = jobs.JobListing().fetchByJobListingId(db, key)
@@ -428,6 +500,37 @@ def managePayroll(table, action, key):
     response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
     response["tiers"] = payroll.Tier().fetchTiers(db)    
     return render_template("payroll.html", response=response)       
+
+@app.route("/<table>/<action>/<key>", methods=['GET','POST'])
+def viewPerson(table, action, key):
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+          
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    response = formData = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+
+    if request.method == 'POST':
+        pass
+    else:
+        if table == "employee":
+            pass
+        elif table == "contractor":
+            pass
+        elif table == "consultant":
+            pass
+        elif table == "candidate":        
+            response["candidateDetails"] = users.Candidate().fetchCandidateById(db, key)
+            response["candidateApplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)      
+    return render_template("person.html", response=response)   
 
 @app.route("/people",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
 @app.route("/people/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])

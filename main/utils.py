@@ -1,4 +1,7 @@
 from .models import *
+from .config import AppConfig
+import re
+
 
 def fetchSidebarLinks(db, username):    
     viewData = {}
@@ -24,14 +27,33 @@ def validateUserAccess(db, username, viewUrl, action=None):
         results = access.View().fetchViews(db, queryParams="view_group = \'PUBLIC\'")
         
     for row in results:
-        print( row.view_url , "######", viewUrl, "######", row.view_url in viewUrl)
         if row.view_url == "/" and row.view_url == viewUrl:
             return True
         elif row.view_url in viewUrl and row.view_url != "/":
-            print( row.view_url , "######", viewUrl)
             return True
     return False     
 
 def changePassword(db, formData):    
     pass
-       
+
+def validateFormData(formData):
+    errors = []
+    if "email" in formData:
+        if not regexCheck(formData["email"], AppConfig.REGEX["EMAIL"]):
+            errors.append("- Invalid email address.")
+    
+    if "password" in formData:
+        if not regexCheck(formData["password"], AppConfig.REGEX["PASSWORD"]):
+            errors.append("- Password should be a minimum of 8 characters long and contain atleast one each of number, uppercase and special character.")
+
+    if "date_of_birth" in formData:
+        pass
+
+    print("ERROR", errors)
+    return "SUCCESS" if errors == [] else "ERROR: Please correct the below errors before submitting the form.<br/>" + '<br/>'.join([ item for item in errors])
+
+def regexCheck( pattern, value):    
+    return True
+    if re.fullmatch(r'%s' % pattern, value):
+        return True
+    return True 

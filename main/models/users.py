@@ -1,5 +1,5 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence, LargeBinary
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence, LargeBinary, Date
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -8,6 +8,7 @@ class Person(base.Model):
     id = Column(Integer, primary_key=True)
     user_type = Column(String, nullable=False)
     user_status = Column(String, nullable=False)
+    user_dob = Column(Date)
     email = Column(String, unique=True, nullable=False, index=True)
     username = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
@@ -19,6 +20,7 @@ class Person(base.Model):
     addr_state = Column(String)
     addr_country = Column(String)
     addr_zip = Column(String)
+    user_dob = Column(Date)
     profile_id = Column(Integer, ForeignKey("profile.id"))
     profile = relationship("Profile", back_populates="persons")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
@@ -26,10 +28,11 @@ class Person(base.Model):
     def __init__(self, formData = None):
         self.user_status = "ACTIVE"
         if formData != None:
-            self.hashed_password = generate_password_hash(formData["password"])
+            self.hashed_password = generate_password_hash(formData["password"], method='pbkdf2:sha256', salt_length=8)
             self.email = formData["email"]
             self.username = formData["username"]
             self.last_name = formData["last_name"]
+            self.user_dob = formData["date_of_birth"] if "first_name" in formData else None
             self.first_name = formData["first_name"] if "first_name" in formData else ""
             self.salutation = formData["salutation"] if "salutation" in formData else ""
             self.addr_line = formData["addr_line"] if "addr_line" in formData else ""
@@ -75,7 +78,7 @@ class Person(base.Model):
                 params = 'username = \'' + usernames + '\'' 
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
-            return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name', params) 
+            return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name, user_type', params) 
         return "ERROR_MISSING_USERNAMES"
 
     ''' Methods overrode by child insert methods
@@ -111,13 +114,11 @@ class Employee(Person):
     employee_id = Column(Integer, Sequence("employee_id_seq", start=1000), primary_key=True)
     num_vacations = Column(Integer)
     tier_id = Column(Integer, ForeignKey("tier.id"))
-
-
     tier = relationship("Tier", back_populates="persons")
     __mapper_args__ = dict(polymorphic_identity = 'employee', inherit_condition = (person_id == Person.id))
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def createEmployeeForm(self, db, formData):   
         self.user_type = "employee"
@@ -150,6 +151,10 @@ class Employee(Person):
         commitStatus = db.commitSession(session)
         return commitStatus
 
+    def fetchManagers(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        queryParams = " employee.person_id = person.id AND person.profile_id = profile.id AND profile.profile_name LIKE '%MANAGER%' "
+        return db.fetchData('employee, person, profile', "person.first_name, person.last_name, person.id", queryParams, queryLimit)        
+
     def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
 
@@ -165,7 +170,7 @@ class External(Person):
     tier = relationship("Tier", back_populates="persons")
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def createExternalForm(self, db, formData):
         self.user_type = "external"
@@ -197,26 +202,32 @@ class Candidate(Person):
     __mapper_args__ = {'polymorphic_identity': 'candidate'}
     __tablename__ = 'candidate'
     id = Column(None, ForeignKey('person.id'), primary_key=True)
-    resume_filename = Column(String)
+    resume_filename = Column(String, default="")
     resume_filedata = Column(LargeBinary)
-    edu_hightest = Column(String)
-    edu_hightest_institution = Column(String)
-    edu_hightest_grade = Column(String)
-    edu_hightest_year = Column(String)
-    linkedin_username = Column(String)
+    edu_hightest = Column(String, default="")
+    edu_hightest_institution = Column(String, default="")
+    edu_hightest_grade = Column(String, default="")
+    edu_hightest_year = Column(String, default="")
+    work_exp_years = Column(Integer, default=0)
+    work_exp_comment = Column(String, default="")
+    linkedin_username = Column(String, default="")
 
     def __init__(self, formData = None):
-        pass
+        super().__init__()
 
     def createCandidateForm(self, db, formData):
+
         self.user_type = "candidate"
-        self.email = formData["username"]
+        formData["username"] = formData["email"]
+        self.username = formData["username"]        
+        super(Candidate, self).__init__(formData)  
         self.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else ""
         self.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else ""
         self.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
         self.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else ""
         self.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
-        super(Candidate, self).__init__(formData) 
+        self.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else 0
+        self.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else ""
         existingUsers = self.fetchByUsername(db, self.username)
         if existingUsers == None or list(existingUsers) == []:
             return self.createCandidate(db)
@@ -235,6 +246,25 @@ class Candidate(Person):
         except Exception as err:
             return "ERROR : " + str(err)
 
+    def editCandidateForm(self, db, formData):
+        session = db.initiateSession()
+        candidateToEdit = session.query(Candidate).filter(Candidate.id==formData["candidate_id"]).first()        
+        candidateToEdit.email = formData["email"]  
+        candidateToEdit.username = formData["email"]
+        candidateToEdit.first_name = formData["first_name"]  
+        candidateToEdit.last_name = formData["last_name"]
+        candidateToEdit.salutation = formData["salutation"]  
+        candidateToEdit.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else ""
+        candidateToEdit.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else ""
+        candidateToEdit.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
+        candidateToEdit.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else ""
+        candidateToEdit.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
+        candidateToEdit.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else 0
+        candidateToEdit.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else ""
+
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
     def uploadResume(self, db, formData):
         session = db.initiateSession()
         candidateToEdit = session.query(Candidate).filter(Person.id==formData["candidate_id"]).first()
@@ -249,3 +279,27 @@ class Candidate(Person):
 
     def fetchCandidatesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('candidate, person', queryFields, queryParams, queryLimit)    
+
+    def validateCandidateOnApply(self, db, candidate_id):
+        errors = []
+        if candidate_id != None:
+            session = db.initiateSession()
+            recordToValidate = session.query(Candidate).filter(Candidate.id==str(candidate_id)).first()
+
+            if recordToValidate.last_name == None or recordToValidate.last_name == "" :
+                errors.append("- Last Name is required.")
+            if recordToValidate.email == None or recordToValidate.email == "" :
+                errors.append("- Email is required.")
+            if recordToValidate.resume_filename == None or recordToValidate.resume_filename == "" :
+                errors.append("- Resume is required. Please upload your Resume file as PDF.")
+            if recordToValidate.edu_hightest == None or recordToValidate.edu_hightest == "" :
+                errors.append("- All Education related fields should be updated.")
+            if recordToValidate.edu_hightest_institution == None or recordToValidate.edu_hightest_institution == "" :
+                errors.append("- All Education related fields should be updated.")
+            if recordToValidate.edu_hightest_year == None or recordToValidate.edu_hightest_year == "" :
+                errors.append("- All Education related fields should be updated.")
+            if recordToValidate.edu_hightest_grade == None or recordToValidate.edu_hightest_grade == "" :
+                errors.append("- All Education related fields should be updated.")
+
+        return "SUCCESS" if errors == [] else "ERROR: Please update above details in 'My Application' section before applying.<br/>" '<br/>'.join([ item for item in errors])
+        

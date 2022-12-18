@@ -41,16 +41,19 @@ class JobListing(base.Model):
 
     def editJobListingForm(self, db, formData):
         session = db.initiateSession()
-        '''profileToEdit = session.query(Profile).filter(Profile.id==formData["profile_id"]).first()
-        profileToEdit.profile_name = formData["profile_name"] 
-        profileToEdit.profile_descr = formData["profile_descr"] 
-        profileToEdit.profile_active = True if "profile_active" in formData else False'''
+        joblistingToEdit = session.query(JobListing).filter(JobListing.id==formData["joblisting_id"]).first()
+        joblistingToEdit.job_title = formData["job_title"] if "job_title" in formData else ""
+        joblistingToEdit.job_descr = formData["job_descr"] if "job_descr" in formData else ""
+        joblistingToEdit.job_exp = formData["job_exp"] if "job_exp" in formData else ""
+        joblistingToEdit.job_role = formData["job_role"] if "job_role" in formData else ""
+        joblistingToEdit.job_status = formData["job_status"] if "job_status" in formData else "OPEN"
+        joblistingToEdit.job_location = formData["job_status"] if "job_status" in formData else "TBD"
         commitStatus = db.commitSession(session)
         return commitStatus
 
     def deleteJobListing(self, db, recordIds):
-        queryParams = "id IN (" + ','.join([ '\'' + prfid + '\'' for prfid in recordIds]) + ") AND profile_custom = true"
-        return db.deleteData('profile', queryParams)
+        queryParams = "id IN (" + ','.join([ '\'' + rcid + '\'' for rcid in recordIds]) + ") "
+        return db.deleteData('joblisting', queryParams)
 
     def fetchByJobListingId(self, db, jobListingIds = []):
         if jobListingIds != [] and jobListingIds != None:
@@ -70,8 +73,8 @@ class JobListing(base.Model):
 class JobApplication(base.Model):
     __tablename__ = 'jobapplication'
     id = Column(Integer, primary_key=True)
-    application_status = Column(String)
-    application_comment = Column(String)
+    application_status = Column(String, default="APPLIED")
+    application_comment = Column(String, default="")
     job_id = Column(Integer, ForeignKey("joblisting.id"))
     candidate_id = Column(Integer, ForeignKey("candidate.id"))
     jobListing = relationship("JobListing", back_populates="children")
@@ -85,7 +88,8 @@ class JobApplication(base.Model):
     def createJobApplicationForm(self, db, formData):
         if "job_id" in formData and "candidate_id" in formData:
             self.__init__(formData)
-            return self.createJobApplication(db)
+            self.createJobApplication(db)
+            
         return "ERROR_MISSING_REQUIRED_IDS"
 
     def createJobApplication(self, db):
@@ -94,15 +98,27 @@ class JobApplication(base.Model):
             session.add(self)
             commitStatus = db.commitSession(session)
             if commitStatus == "SUCCESS":
-                return "INSERTED_JOBAAPLICATION"
+                return "INSERTED_JOBAPPLICATION"
             else:
                 return "ERROR_" + commitStatus
         except Exception as err:
             return "ERROR : " + str(err)
 
+    def updateApplicationStatus(self, db, recordId, status):
+        session = db.initiateSession()
+        itemToEdit = session.query(JobApplication).filter(JobApplication.id==str(recordId)).first()
+        itemToEdit.application_status = status.upper()        
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
+    def deleteJobApplication(self, db, recordIds):
+        queryParams = "id IN (" + ','.join([ '\'' + rcid + '\'' for rcid in recordIds]) + ") "
+        return db.deleteData('jobapplication', queryParams)
+
     def fetchJobApplication(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('jobapplication', queryFields, queryParams, queryLimit)
         
     def fetchJobApplicationWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id "
-        return db.fetchData('jobapplication, joblisting, candidate', queryFields, queryParams, queryLimit)
+        if queryParams == None:
+            queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id "
+        return db.fetchData('jobapplication, joblisting, candidate', "jobapplication.id, application_status, application_comment, job_title, job_descr", queryParams, queryLimit)

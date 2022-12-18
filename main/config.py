@@ -22,3 +22,7 @@ class AppConfig():
         #DEFAULT CREDS
         DFLT_PASSWORD = 'qwerty1234'
 
+    REGEX = {
+        "PASSWORD" : "^(?=.*\d)(?=.*[!@#$&*])(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$",
+        "EMAIL" : "^[\w-\.+]+@([\w-]+\.)+[\w-]{2,5}$"
+    }
