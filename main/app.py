@@ -209,6 +209,37 @@ def vacation():
     response["leaveHistory"] = services.DailyStatus().fetchDailyStatusByUsername(db,  session['userSession']['id'])    
     return render_template("vacation.html", response=response)              
 
+@app.route("/settings", defaults={'table' : 'main', 'action': None}, methods=['GET'])
+@app.route("/settings/<table>/<action>", methods=['GET','POST'])
+def userSettings(table, action):
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))    
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+    
+    response = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
+    if request.method == 'POST':
+        formData = dict(request.form)
+        response["formData"] = formData
+        if table == "password" and action == "change":            
+            response["messages"] = utils.validateFormData(formData)
+            if "ERROR" in response["messages"]:
+                return render_template("settings.html", response=response)
+            else:
+                result = users.Person().changePassword(db, session['userSession']["username"], request.form['oldpassword'], request.form['newpassword'] )
+                if result != None and "ERROR" not in result:
+                    return redirect("/settings?msg=" + response["messages"])
+                else:
+                    response["messages"] = result    
+    return render_template("settings.html", response=response)
 
 @app.route("/itresources", methods=["GET", "POST"])
 def itResources():
@@ -610,7 +641,7 @@ def managePeople(table, action, key):
     return render_template("people.html", response=response)   
     
 
-@app.route("/access",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/access",  defaults={'table': None, 'action' : None, 'key': None }, methods=['GET'])
 @app.route("/access/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/access/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/access/<table>/<action>/<key>", methods=['GET','POST'])

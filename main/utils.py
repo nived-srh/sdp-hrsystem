@@ -46,14 +46,22 @@ def validateFormData(formData):
         if not regexCheck(formData["password"], AppConfig.REGEX["PASSWORD"]):
             errors.append("- Password should be a minimum of 8 characters long and contain atleast one each of number, uppercase and special character.")
 
+    if "newpassword" in formData and "newpasswordrepeat" in formData :
+        if formData["newpassword"] != formData["newpasswordrepeat"]:
+            errors.append("- New passowrds entered do not match.")
+
+        if not regexCheck(formData["newpassword"], AppConfig.REGEX["PASSWORD"]):
+            errors.append("- Password should be a minimum of 8 characters long and contain atleast one each of number, uppercase and special character.")
+
     if "date_of_birth" in formData:
         pass
 
     print("ERROR", errors)
     return "SUCCESS" if errors == [] else "ERROR: Please correct the below errors before submitting the form.<br/>" + '<br/>'.join([ item for item in errors])
 
-def regexCheck( pattern, value):    
-    return True
-    if re.fullmatch(r'%s' % pattern, value):
+def regexCheck( value, pattern):    
+    regexString = r''+ pattern
+    print("asdasdasd", regexString)
+    if re.fullmatch(regexString, value):
         return True
-    return True 
+    return False 

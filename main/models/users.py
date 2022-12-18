@@ -20,7 +20,6 @@ class Person(base.Model):
     addr_state = Column(String)
     addr_country = Column(String)
     addr_zip = Column(String)
-    user_dob = Column(Date)
     profile_id = Column(Integer, ForeignKey("profile.id"))
     profile = relationship("Profile", back_populates="persons")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
@@ -79,6 +78,18 @@ class Person(base.Model):
             elif isinstance(usernames, list):
                 params = 'username IN (' + ','.join([ '\'' + usr + '\'' for usr in usernames]) + ')' 
             return self.fetchPersons(db, 'id, email, hashed_password, username, first_name, last_name, user_type', params) 
+        return "ERROR_MISSING_USERNAMES"
+
+    def changePassword(self, db, username, oldpassword, newpassword):        
+        session = db.initiateSession()
+        userRecord = session.query(Person).filter(Person.username==username).first()     
+        if userRecord != None:
+            if check_password_hash(userRecord.hashed_password,oldpassword): 
+                userRecord.hashed_password = generate_password_hash(newpassword, method='pbkdf2:sha256', salt_length=8)
+                commitStatus = db.commitSession(session)
+                return commitStatus
+            else:
+                return "ERROR_INCORRECT_OLD_PASSWORD"
         return "ERROR_MISSING_USERNAMES"
 
     ''' Methods overrode by child insert methods
