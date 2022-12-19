@@ -35,9 +35,11 @@ class JobListing(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_JOBLISTING"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_JOBLISTING" 
 
     def editJobListingForm(self, db, formData):
         session = db.initiateSession()
@@ -100,9 +102,11 @@ class JobApplication(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_JOBAPPLICATION"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_JOBAPPLCATION" 
 
     def updateApplicationStatus(self, db, recordId, status):
         session = db.initiateSession()
@@ -120,5 +124,5 @@ class JobApplication(base.Model):
         
     def fetchJobApplicationWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         if queryParams == None:
-            queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id "
-        return db.fetchData('jobapplication, joblisting, candidate', "jobapplication.id, application_status, application_comment, job_title, job_descr", queryParams, queryLimit)
+            queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND candidate.id = person.id"
+        return db.fetchData('jobapplication, joblisting, candidate, person', "jobapplication.id, application_status, application_comment, job_title, job_descr", queryParams, queryLimit)

@@ -32,9 +32,11 @@ class Tier(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_TIER"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_TIER" 
 
     def editTierForm(self, db, formData):
         session = db.initiateSession()
@@ -97,9 +99,11 @@ class Payroll(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_PAYROLL"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_PAYROLL" 
 
     def editPayrollForm(self, db, formData):
         session = db.initiateSession()
@@ -128,10 +132,11 @@ class Payroll(base.Model):
     def fetchPayrolls(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('payroll', queryFields, queryParams, queryLimit)
 
-    '''
-    def fetchTierWithUserCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('tier, person', "id, tier_name, tier_descr, tier_active, tier_default, tier_payscale, (SELECT COUNT(id) FROM person WHERE person.tier_id = tier.id)" , queryParams, queryLimit)
-    '''
+    def fetchPayrollsWithDetailCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('payroll', "id, proll_externalid, proll_status, proll_year, proll_month, (SELECT COUNT(id) FROM payrolldetails WHERE payrolldetails.payroll_id = payroll.id) AS detailcount ", queryParams, queryLimit)
+
+    def generatePayrollDetails(self, db, payroll_id):
+        pass
 
 class PayrollDetails(base.Model):
     __tablename__ = 'payrolldetails'

@@ -32,9 +32,11 @@ class DailyStatus(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_DAILYSTATUS"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_DAILYSTATUS" 
 
     def fetchDailyStatusByUsername(self, db, userId):
         queryParams = " employee_id = '" + str(userId) + "' ORDER BY id DESC"
@@ -72,9 +74,11 @@ class Vacation(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_VACATION"
             else:
-                return "ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
-            return "ERROR : " + str(err)
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR_INS_VACATION" 
 
     def fetchVacationByUsername(self, db, userId):
         queryParams = " employee_id = '" + str(userId) + "' ORDER BY id DESC"

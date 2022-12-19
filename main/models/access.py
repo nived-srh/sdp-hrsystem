@@ -58,6 +58,8 @@ class Profile(base.Model):
                     else:
                         return "ERROR_" + commitStatus
                 except Exception as err:
+                    if "duplicate key" in str(err):
+                        return "ERROR : DUPLICATE KEY" 
                     return "ERROR_INS_PROFILE_WITH_ACCESS"
         else:
             return response
@@ -165,7 +167,9 @@ class ProfileAccess(base.Model):
                 else:
                     return "ERROR_" + commitStatus
             except Exception as err:
-                return "ERROR"
+                if "duplicate key" in str(err):
+                    return "ERROR : DUPLICATE KEY" 
+                return "ERROR_INS_PROFILE_WITH_ACCESS"
         else:
             return "ERROR_DUPLICATE_PROFILEACCESS"
     
@@ -280,9 +284,11 @@ class View(base.Model):
                 if commitStatus == "SUCCESS":
                     return "INSERTED_VIEW"
                 else:
-                    return "ERROR_" + commitStatus
+                    return "ERROR_DBCOMMIT"
             except Exception as err:
-                return "ERROR"
+                if "duplicate key" in str(err):
+                    return "ERROR : DUPLICATE KEY" 
+                return "ERROR_INS_VIEW"
         else:
             return "ERROR_DUPLICATE_VIEW"
     

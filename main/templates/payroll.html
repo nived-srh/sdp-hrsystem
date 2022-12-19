@@ -73,6 +73,7 @@
                     <th scope="col" colspan="2" style="width:10%">Action</th>
                     <th scope="col">Period</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Payroll Details</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,6 +87,11 @@
                     </td>
                     <td>{{item.proll_year}} / {{item.proll_month}}</td>
                     <td>{{item.proll_status}}</td>
+                    {% if item.proll_status != "DRAFT" %}
+                    <td>{{item.detailcount}}</td>
+                    {% else %}                    
+                    <a href="/payroll/details/generate/{{item.id}}"><td>Generate Payroll Details</td></a>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

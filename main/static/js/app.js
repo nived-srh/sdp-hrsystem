@@ -48,6 +48,20 @@ $( document ).ready(function() {
             if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('TiersForm');
             }
+        }else if(people_data.table == "records"){
+            document.getElementById("manageAccounts").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('AccountsForm');
+            }
+        }else if(people_data.table == "projects"){
+            document.getElementById("manageProjects").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('ProjectsForm');
+            }
+        }else if(people_data.table == "itresources"){
+            if(people_data.action == "create" || people_data.action == "edit"){
+                toggleForm('ITResourcesForm');
+            }
         }
     }
 });

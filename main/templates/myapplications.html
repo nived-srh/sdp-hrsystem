@@ -151,7 +151,7 @@
                                         <input class="form-control" id="employee-email" name="email" type="text"
                                             value="{{response['formData']['email']}}">
                                     </div>
-                                    <div class="col-xs-3 flex-grow-1">
+                                    <div class="col-xs-3 flex-grow-1 mr-4">
                                         <label for="linkedin_username">Linked In</label>
                                         <div class="input-group">
                                             <span class="input-group-text" id="inputGroupPrepend">@</span>
@@ -159,6 +159,13 @@
                                                 name="linkedin_username"
                                                 value="{{response['formData']['linkedin_username']}}">
                                         </div>
+                                    </div>
+                                    <div class="col-xs-4">
+                                        <label for="date_of_birth">Date of Birth</label>
+                                        <input type="date" class="form-control" id="date_of_birth"
+                                            name="date_of_birth" aria-describedby="usernameHelp"
+                                            placeholder="jdean@example.com"
+                                            value="{{response['formData']['date_of_birth']}}" required>
                                     </div>
                                 </div>
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">

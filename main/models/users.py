@@ -134,6 +134,7 @@ class Employee(Person):
     def createEmployeeForm(self, db, formData):   
         self.user_type = "employee"
         self.num_vacations = 30
+        self.tier_id = formData["tier_id"] if "tier_id" in formData else None
         super(Employee, self).__init__(formData)     
         existingUsers = self.fetchByUsername(db, self.username)
         if existingUsers == None or list(existingUsers) == []:
@@ -149,16 +150,24 @@ class Employee(Person):
             if commitStatus == "SUCCESS":
                 return "INSERTED_EMPLOYEE"
             else:
-                return "COMMIT_ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
             return "ERROR : " + str(err)
     
     def editEmployeeForm(self, db, formData):
         session = db.initiateSession()
-        profileToEdit = session.query(Employee).filter(Person.id==formData["id"]).first()
-        profileToEdit.profile_name = formData["profile_name"] 
-        profileToEdit.profile_descr = formData["profile_descr"] 
-        profileToEdit.profile_active = True if "profile_active" in formData else False
+        recordToEdit = session.query(Employee).filter(Person.id==formData["person_id"]).first()
+        recordToEdit.email = formData["email"]  
+        recordToEdit.username = formData["email"]
+        recordToEdit.first_name = formData["first_name"]  
+        recordToEdit.last_name = formData["last_name"]
+        recordToEdit.salutation = formData["salutation"]  
+        recordToEdit.tier_id = formData["tier_id"] if "tier_id" in formData else recordToEdit.tier_id
+        recordToEdit.addr_line = formData["addr_line"] if "addr_line" in formData else recordToEdit.addr_line
+        recordToEdit.addr_city = formData["addr_city"] if "addr_city" in formData else recordToEdit.addr_city
+        recordToEdit.addr_state = formData["addr_state"] if "addr_state" in formData else recordToEdit.addr_state
+        recordToEdit.addr_country = formData["addr_country"] if "addr_country" in formData else recordToEdit.addr_country
+        recordToEdit.addr_zip = formData["addr_zip"] if "addr_zip" in formData else recordToEdit.addr_zip
         commitStatus = db.commitSession(session)
         return commitStatus
 
@@ -167,6 +176,8 @@ class Employee(Person):
         return db.fetchData('employee, person, profile', "person.first_name, person.last_name, person.id", queryParams, queryLimit)        
 
     def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        for row in db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        :
+            print(str(row))
         return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
 
 class External(Person):
@@ -202,7 +213,7 @@ class External(Person):
             if commitStatus != "Success":
                 return "INSERTED_EXTERNAL"
             else:
-                return "COMMIT_ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
             return "ERROR : " + str(err) 
 
@@ -253,7 +264,7 @@ class Candidate(Person):
             if commitStatus == "SUCCESS":
                 return "INSERTED_CANDIDATE"
             else:
-                return "COMMIT_ERROR_" + commitStatus
+                return "ERROR_DBCOMMIT"
         except Exception as err:
             return "ERROR : " + str(err)
 
@@ -265,13 +276,13 @@ class Candidate(Person):
         candidateToEdit.first_name = formData["first_name"]  
         candidateToEdit.last_name = formData["last_name"]
         candidateToEdit.salutation = formData["salutation"]  
-        candidateToEdit.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else ""
-        candidateToEdit.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else ""
-        candidateToEdit.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
-        candidateToEdit.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else ""
-        candidateToEdit.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
-        candidateToEdit.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else 0
-        candidateToEdit.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else ""
+        candidateToEdit.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else candidateToEdit.edu_hightest
+        candidateToEdit.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else candidateToEdit.edu_hightest_grade
+        candidateToEdit.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else candidateToEdit.edu_hightest_institution
+        candidateToEdit.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else candidateToEdit.edu_hightest_year
+        candidateToEdit.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else candidateToEdit.linkedin_username
+        candidateToEdit.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else candidateToEdit.work_exp_years
+        candidateToEdit.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else candidateToEdit.work_exp_comment
 
         commitStatus = db.commitSession(session)
         return commitStatus

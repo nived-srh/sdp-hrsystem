@@ -135,27 +135,92 @@ def profile():
     response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
     return render_template("profile.html", response=response)       
         
-@app.route("/accounts", methods=["GET", "POST"])
-def accounts():
+@app.route("/accounts",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/accounts/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
+@app.route("/accounts/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
+@app.route("/accounts/<table>/<action>/<key>", methods=['GET','POST'])
+def manageAccounts(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
-        
+    if table == None:
+        return redirect("/accounts/records")    
+
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
 
-    response = {}
+    response = formData = {}
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+    # formData['proll_period'] = date.today().strftime("%Y-%m")    
+
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
 
     if request.method == 'POST':
-        pass
-    else:        
-        pass
-    response["accounts"] = None #services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
-    return render_template("accounts.html", response=response)       
-        
+        formData = dict(request.form)
+        if action == "create":
+            if table == "projects": 
+                response["messages"] = accounts.Project().createProjectForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/projects?msg=" + response["messages"]) 
+            elif table == "records":
+                response["messages"] = accounts.Account().createAccountForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/records?msg=" + response["messages"]) 
+        elif action == "edit":
+            if table == "projects": 
+                response["messages"] = accounts.Project().editProjectForm()(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/projects?msg=" + response["messages"]) 
+            elif table == "details":
+                response["messages"] = accounts.Account().editAccountForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/records?msg=" + response["messages"]) 
+
+    if key != None:        
+        if action == "read":            
+            pass
+        elif action == "edit":
+            if table == "projects":                 
+                result = accounts.Project().fetchByProjectId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['id'] = row.id       
+                        formData['description'] = row.description      
+                        formData['account_id'] = row.account_id                      
+            elif table == "records": 
+                result =  accounts.Account().fetchByAccountId(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['acc_name'] = row.acc_name
+                        formData['acc_type'] = row.acc_type
+                        formData['acc_status'] = row.acc_status
+        elif action == "delete":
+            if table == "projects": 
+                result =  accounts.Project().deleteProject(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/accounts/projects?msg=" + result)
+                else:
+                    response["messages"] = result    
+            elif table == "records":    
+                result = accounts.Account().deleteAccount(db, list(key))
+                if result == "SUCCESS":
+                    return redirect("/accounts/records?msg=" + result)
+                else:
+                    response["messages"] = result     
+    elif key == None and action != None and table != None and request.method == 'GET':
+        response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
+          
+    response["formData"] = formData
+    response["accounts"] = accounts.Account().fetchAccounts(db)    
+    response["projects"] = accounts.Project().fetchProjects(db)    
+    return render_template("accounts.html", response=response)   
+             
 @app.route("/dailystatus", methods=["GET", "POST"])
 def dailystatus():
     if 'userSession' not in session:        
@@ -241,8 +306,10 @@ def userSettings(table, action):
                     response["messages"] = result    
     return render_template("settings.html", response=response)
 
-@app.route("/itresources", methods=["GET", "POST"])
-def itResources():
+@app.route("/itresources", defaults={'action': None, 'key': None }, methods=["GET", "POST"])
+@app.route("/itresources/<action>", defaults={'key': None }, methods=["GET"])
+@app.route("/itresources/<action>/<key>", methods=["GET"])
+def itResources(action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
 
@@ -253,10 +320,24 @@ def itResources():
     response = formData = {}
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
-    response["userSession"] = session['userSession']
+    response["userSession"] = session['userSession']  
+    response["table"] = "itresources"
+    response["action"] = action
+    response["key"] = key
 
-    response["resources"] = infrastructure.ITResource().fetchITResources(db)
+    if request.method == 'POST':
+        formData = dict(request.form)
+        if action == 'create':
+            response["messages"] = infrastructure.ITResource().createITResourceForm(db,formData)
+        elif action == 'edit':
+            response["messages"] = infrastructure.ITResource().editITResourceForm(db,formData)
+    elif key != None:
+        if action == 'edit':
+            response["messages"] = infrastructure.ITResource().editITResourceForm(db,formData)
+        elif action == 'delete':
+            response["messages"] = infrastructure.ITResource().deleteITResources(db,list(key))
     response["formData"] = formData
+    response["resources"] = infrastructure.ITResource().fetchITResourcesWithDetails(db)
     return render_template("itresource.html", response=response)
 
 @app.route("/jobs",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -442,6 +523,7 @@ def recruitment(table, action, key):
 
     response["formData"] = formData
     response["joblistings"] = jobs.JobListing().fetchJobListingWithApplicantCount(db)
+    response["candidateApplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)
     return render_template("recruitment.html", response=response)       
 
 @app.route("/payroll",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -495,6 +577,8 @@ def managePayroll(table, action, key):
     if key != None:        
         if action == "read":            
             pass
+        elif action == "generate" and table == "details":
+            result = payroll.Payroll().generatePayrollDetails(db, list(key))
         elif action == "edit":
             if table == "tiers": 
                 result = payroll.Tier().fetchByTierId(db, list(key))
@@ -532,38 +616,7 @@ def managePayroll(table, action, key):
     response["tiers"] = payroll.Tier().fetchTiers(db)    
     return render_template("payroll.html", response=response)       
 
-@app.route("/<table>/<action>/<key>", methods=['GET','POST'])
-def viewPerson(table, action, key):
-    if 'userSession' not in session:        
-        return redirect(url_for('login'))
-          
-    global db
-    if db == None:
-        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
-
-    response = formData = {}
-    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
-    response["hasSidebar"] = True
-    response["userSession"] = session['userSession']
-    response["table"] = table
-    response["action"] = action
-    response["key"] = key
-
-    if request.method == 'POST':
-        pass
-    else:
-        if table == "employee":
-            pass
-        elif table == "contractor":
-            pass
-        elif table == "consultant":
-            pass
-        elif table == "candidate":        
-            response["candidateDetails"] = users.Candidate().fetchCandidateById(db, key)
-            response["candidateApplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)      
-    return render_template("person.html", response=response)   
-
-@app.route("/people",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/people",  defaults={'table': None, 'action' : None, 'key': None }, methods=['GET'])
 @app.route("/people/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/people/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/people/<table>/<action>/<key>", methods=['GET','POST'])
@@ -583,14 +636,19 @@ def managePeople(table, action, key):
     response["table"] = table
     response["action"] = action
     response["key"] = key
+    response["formData"] = formData
+    response["formData"]["date_of_birth"] = "2004-01-01"
 
     if request.args.get('msg') != None:
         response["messages"] = request.args.get('msg')
 
     if request.method == 'POST':
+        formData = dict(request.form)
+        response["formData"] = formData
         if action == "create":
-            formData = dict(request.form)
-            formData["password"] = AppConfig.DFLT_PASSWORD
+            response["messages"] = utils.validateFormData(formData)
+            if "ERROR" in response["messages"]:
+                return render_template("people.html", response=response)
             if table == "employees": 
                 response["messages"] = users.Employee().createEmployeeForm(db, formData)
             elif table == "contractors":
@@ -730,19 +788,34 @@ def fetchData(table, limit):
             "id": row.id , 
             "field_name" : row.tier_name    
         } for row in results]
+    elif table == "persons":
+        results = users.Person().fetchPersons(db)
+        response = [{
+            "id": row.id , 
+            "field_name" : row.last_name + ", " + row.first_name     
+        } for row in results]
+    elif table == "accounts":
+        results = accounts.Account().fetchAccounts(db)
+        response = [{
+            "id": row.id , 
+            "field_name" : row.acc_name    
+        } for row in results]
+    elif table == "managers":
+        results = users.Employee().fetchManagers(db)
+        response = [{
+            "id": row.id , 
+            "field_name" : row.last_name    
+        } for row in results]
     elif table == "views":
         results = utils.fetchSidebarLinks(db, session['userSession']["username"])    
         response = [{
-            "crr": utils.validateUserAccess(db, session['userSession']["username"], request.path) , 
             "id": row.view_name , 
             "profile_name" : row.view_group    
         } for row in results]
-    elif table =="consultants":
-        results = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONTRACTOR' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
-        response =str(results)
+
     if results != None:
         return jsonify({
-            "results" : response})
+            "results" : response})    
     else:
         return jsonify({
              table : []
@@ -773,6 +846,37 @@ def dropDB():
         print(err)
         return jsonify({ "error": "error" })
     return jsonify({ "result": "SUCCESS" })
+
+@app.route("/<table>/<action>/<key>", methods=['GET','POST'])
+def viewPerson(table, action, key):
+    if 'userSession' not in session:        
+        return redirect(url_for('login'))
+          
+    global db
+    if db == None:
+        db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
+
+    response = formData = {}
+    response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
+    response["hasSidebar"] = True
+    response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
+
+    if request.method == 'POST':
+        pass
+    else:
+        if table == "employee":
+            pass
+        elif table == "contractor":
+            pass
+        elif table == "consultant":
+            pass
+        elif table == "candidate":        
+            response["candidateDetails"] = users.Candidate().fetchCandidateById(db, key)
+            response["candidateApplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)      
+    return render_template("person.html", response=response)   
 
 @app.errorhandler(404)
 @app.route("/unauthorized")

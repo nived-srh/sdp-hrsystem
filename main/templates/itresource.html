@@ -31,31 +31,43 @@
                             {{ response['action']|title if response['action'] != None else 'Add' }} IT Resource
                         </div>
                         <form
-                            action="/resource/list/{{ response['action'] if response['action'] != None else 'create' }}"
+                            action="/itresources"
                             method="POST" autocomplete="off">
                             <div class="card-body">
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
                                     <div class="col-xs-2 flex-grow-1 ">
                                         <label for="resource_name">Name</label>
                                         <input type="text" class="form-control" id="resource_name" name="resource_name"
-                                            value="{{response['formData']['resource_name']}}">
+                                            value="{{response['formData']['resource_name']}}" required>
                                     </div>
                                     <div class="col-xs-4 flex-grow-1 ml-4">
-                                        <label for="resource_descr">Payscale (Monthly)</label>
-                                        <input type="number" class="form-control" id="resource_descr"
-                                            name="resource_descr" value="{{response['formData']['resource_descr']}}">
+                                        <label for="resource_descr">Description</label>
+                                        <input type="text" class="form-control" id="resource_descr" name="resource_descr"
+                                            value="{{response['formData']['resource_descr']}}">
                                     </div>
-                                    <div class="col-xs-4 ml-4">
-                                        <label for="resource_status">Active</label>
-                                        <input type="checkbox" class="form-control" id="resource_status" name="resource_status"
-                                            {{ "checked" if response['formData']["resource_status"] else "" }}>
+                                    <div class="col-xs-4 flex-grow-1 ml-4">
+                                        <label for="resource_serialnumber">Serial Number</label>
+                                        <input type="text" class="form-control" id="resource_serialnumber" name="resource_serialnumber"
+                                            value="{{response['formData']['resource_serialnumber']}}">
                                     </div>
                                 </div>
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
+                                    <div class="col-xs-3 flex-grow-1 mr-4">
+                                        <label for="resource_person_id">Employee</label>
+                                        <select class="form-control" id="resource_person_id" name="resource_person_id" onfocus="fetchData('persons','#resource_person_id');">
+                                        </select>
+                                    </div>
                                     <div class="col-xs-3 flex-grow-1">
-                                        <label for="resource_type">Description</label>
-                                        <input type="checkbox" class="form-control" id="resource_type" name="resource_type"
-                                            {{ "checked" if response['formData']["resource_type"] else "" }}>
+                                        <label for="resource_status">Status</label>
+                                        <input type="text" class="form-control" id="resource_status" name="resource_status"
+                                            value="{{response['formData']['resource_status']}}">
+                                    </div>
+                                    <div class="col-xs-4 ml-4">
+                                        <label for="resource_type">Type</label>
+                                        <select class="form-control" id="resource_type" name="resource_type">
+                                            <option>Services</option>
+                                            <option>Hardware</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <input type="hidden" id="resource_id" name="resource_id" value="{{response['key']}}" />
@@ -88,16 +100,16 @@
             <tbody>
                 {% for item in response["resources"] %}
                 <tr>
-                    <td class="text-center"><a href="/payroll/tiers/edit/{{item.id}}"><i
+                    <td class="text-center"><a href="/itresources/edit/{{item.id}}"><i
                                 class="fa-solid fa-edit fa-flip-horizontal "></i></a>
                     </td>
-                    <td class="text-center"><a href="/payroll/tiers/delete/{{item.id}}"><i
+                    <td class="text-center"><a href="/itresources/delete/{{item.id}}"><i
                                 class="fa-solid fa-trash fa-flip-horizontal"></i></a>
                     </td>
                     <td>{{item.resource_name}}</td>
                     <td>{{item.resource_descr}}</td>
                     <td>{{item.resource_type}}</td>
-                    <td>{{item.resource_assignedto}}</td>
+                    <td>{{item.last_name}}, {{item.first_name}}</td>
                     <td>{{item.resource_status}}</td>
                 </tr>
                 {% endfor %}
