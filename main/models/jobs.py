@@ -1,5 +1,5 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date
 from sqlalchemy.orm import relationship
 from datetime import date
 
@@ -12,7 +12,7 @@ class JobListing(base.Model):
     job_role = Column(String)
     job_location = Column(String)
     job_status = Column(String(10))
-    created_at = Column(String)
+    created_at = Column(Date)
     children = relationship("JobApplication", back_populates="jobListing")
 
     def __init__(self, formData = None):
@@ -22,7 +22,7 @@ class JobListing(base.Model):
             self.job_exp = formData["job_exp"] if "job_exp" in formData else ""
             self.job_role = formData["job_role"] if "job_role" in formData else ""
             self.job_status = formData["job_status"] if "job_status" in formData else "OPEN"
-            self.job_location = formData["job_status"] if "job_status" in formData else "TBD"
+            self.job_location = formData["job_location"] if "job_location" in formData else "TBD"
 
     def createJobListingForm(self, db, formData):
         self.__init__(formData)
@@ -37,7 +37,7 @@ class JobListing(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_JOBLISTING"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
@@ -51,7 +51,7 @@ class JobListing(base.Model):
         joblistingToEdit.job_exp = formData["job_exp"] if "job_exp" in formData else ""
         joblistingToEdit.job_role = formData["job_role"] if "job_role" in formData else ""
         joblistingToEdit.job_status = formData["job_status"] if "job_status" in formData else "OPEN"
-        joblistingToEdit.job_location = formData["job_status"] if "job_status" in formData else "TBD"
+        joblistingToEdit.job_location = formData["job_location"] if "job_location" in formData else "TBD"
         commitStatus = db.commitSession(session)
         return commitStatus
 
@@ -69,7 +69,7 @@ class JobListing(base.Model):
         return "ERROR_MISSING_JOBLISTINGIDS"
 
     def fetchJobListingWithApplicantCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('joblisting', "id, job_title, job_descr, job_exp, job_location, job_status, job_role, (SELECT COUNT(id) FROM jobapplication WHERE jobapplication.job_id = joblisting.id)" , queryParams, queryLimit)
+        return db.fetchData('joblisting', "id, created_at, job_title, job_descr, job_exp, job_location, job_status, job_role, (SELECT COUNT(id) FROM jobapplication WHERE jobapplication.job_id = joblisting.id)" , queryParams, queryLimit)
 
     def fetchJobListings(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('joblisting', queryFields, queryParams, queryLimit)
@@ -78,7 +78,7 @@ class JobApplication(base.Model):
     __tablename__ = 'jobapplication'
     id = Column(Integer, primary_key=True)
     application_status = Column(String, default="APPLIED")
-    application_comment = Column(String, default="")
+    application_date = Column(Date)
     job_id = Column(Integer, ForeignKey("joblisting.id"))
     candidate_id = Column(Integer, ForeignKey("candidate.id"))
     jobListing = relationship("JobListing", back_populates="children")
@@ -92,6 +92,7 @@ class JobApplication(base.Model):
     def createJobApplicationForm(self, db, formData):
         if "job_id" in formData and "candidate_id" in formData:
             self.__init__(formData)
+            self.application_date = date.today()
             self.createJobApplication(db)
             
         return "ERROR_MISSING_REQUIRED_IDS"
@@ -127,4 +128,4 @@ class JobApplication(base.Model):
     def fetchJobApplicationWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         if queryParams == None:
             queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND candidate.id = person.id ORDER BY joblisting.job_title"
-        return db.fetchData('jobapplication, joblisting, candidate, person', "jobapplication.id, application_status, application_comment, job_title, job_descr, email, first_name, last_name, candidate_id", queryParams, queryLimit)
+        return db.fetchData('jobapplication, joblisting, candidate, person', "jobapplication.id, application_date, application_status, application_date, resume_filename, job_title, job_descr, email, first_name, last_name, candidate_id", queryParams, queryLimit)

@@ -46,7 +46,10 @@ class DatabaseConnect():
         except Exception as err:
             session.rollback()
             print("ERROR_ROLLBACK :", str(err))
-            commitStatus = "ERROR_ROLLBACK : ON DBCOMMIT" 
+            if "duplicate key" in str(err):
+                commitStatus = "DUPLICATE_KEY"
+            else:
+                commitStatus = "ERROR_ROLLBACK : ON DBCOMMIT" 
         finally: 
             if autoClose:
                 self.closeSession(session)  

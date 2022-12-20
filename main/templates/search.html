@@ -2,11 +2,10 @@
 
 
 {% block content %}
-<div class="container p-2">
+<div class="container-fluid px-5">
     <h1 class="mb-4">Search Results</h1>
 
     {% if response["payrolls"].rowcount > 0 %}
-
     <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
         <thead>
             <tr>
@@ -37,11 +36,6 @@
             {% endfor %}
         </tbody>
     </table>
-    {% else %}
-    <p class="text-center text-muted">No payrolls found. Generate payroll from above to create payroll details in
-        the
-        system.
-    </p>
     {% endif %}
 
     {% if "defaultviews" in response %}

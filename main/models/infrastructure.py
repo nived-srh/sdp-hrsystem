@@ -35,7 +35,7 @@ class ITResource(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_ITRESOURCE"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 

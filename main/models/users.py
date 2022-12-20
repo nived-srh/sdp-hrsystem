@@ -92,7 +92,7 @@ class Person(base.Model):
                 return "ERROR_INCORRECT_OLD_PASSWORD"
         return "ERROR_MISSING_USERNAMES"
 
-    ''' Methods overrode by child insert methods
+    ''' Methods overridden by child insert methods
     def createPersonForm(self, db, formData):
         self.hashed_password = generate_password_hash(formData["password"])
         self.email = formData["username"]
@@ -150,7 +150,7 @@ class Employee(Person):
             if commitStatus == "SUCCESS":
                 return "INSERTED_EMPLOYEE"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             return "ERROR : " + str(err)
     
@@ -213,7 +213,7 @@ class External(Person):
             if commitStatus != "Success":
                 return "INSERTED_EXTERNAL"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             return "ERROR : " + str(err) 
 
@@ -229,7 +229,7 @@ class Candidate(Person):
     edu_hightest = Column(String, default="")
     edu_hightest_institution = Column(String, default="")
     edu_hightest_grade = Column(String, default="")
-    edu_hightest_year = Column(String, default="")
+    edu_hightest_year = Column(Integer, default=None)
     work_exp_years = Column(Integer, default=0)
     work_exp_comment = Column(String, default="")
     linkedin_username = Column(String, default="")
@@ -246,7 +246,7 @@ class Candidate(Person):
         self.edu_hightest = formData["edu_hightest"] if "edu_hightest" in formData else ""
         self.edu_hightest_grade = formData["edu_hightest_grade"] if "edu_hightest_grade" in formData else ""
         self.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
-        self.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else ""
+        self.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else None
         self.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
         self.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else 0
         self.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else ""
@@ -264,7 +264,7 @@ class Candidate(Person):
             if commitStatus == "SUCCESS":
                 return "INSERTED_CANDIDATE"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             return "ERROR : " + str(err)
 
@@ -306,7 +306,7 @@ class Candidate(Person):
         errors = []
         if candidate_id != None:
             session = db.initiateSession()
-            recordToValidate = session.query(Candidate).filter(Candidate.id==str(candidate_id)).first()
+            recordToValidate = session.query(Candidate).filter(Candidate.id==candidate_id).first()
 
             if recordToValidate.last_name == None or recordToValidate.last_name == "" :
                 errors.append("- Last Name is required.")
@@ -315,13 +315,13 @@ class Candidate(Person):
             if recordToValidate.resume_filename == None or recordToValidate.resume_filename == "" :
                 errors.append("- Resume is required. Please upload your Resume file as PDF.")
             if recordToValidate.edu_hightest == None or recordToValidate.edu_hightest == "" :
-                errors.append("- All Education related fields should be updated.")
+                errors.append("- Specify the highest Education degree completed.")
             if recordToValidate.edu_hightest_institution == None or recordToValidate.edu_hightest_institution == "" :
-                errors.append("- All Education related fields should be updated.")
-            if recordToValidate.edu_hightest_year == None or recordToValidate.edu_hightest_year == "" :
-                errors.append("- All Education related fields should be updated.")
+                errors.append("- Specify the name of the institution for the highest Education degree completed.")
+            if recordToValidate.edu_hightest_year == None :
+                errors.append("- Specify the year of the completion/ estimated completion for the highest Education degree completed.")
             if recordToValidate.edu_hightest_grade == None or recordToValidate.edu_hightest_grade == "" :
-                errors.append("- All Education related fields should be updated.")
+                errors.append("- Specify the final grage for the highest Education degree completed.")
 
-        return "SUCCESS" if errors == [] else "ERROR: Please update above details in 'My Application' section before applying.<br/>" '<br/>'.join([ item for item in errors])
+        return "SUCCESS" if errors == [] else ("ERROR: Please update below details in 'My Application' section before applying.<br/>" + '<br/>'.join([ item for item in errors]))
         

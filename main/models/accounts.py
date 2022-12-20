@@ -40,7 +40,7 @@ class Account(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_ACCOUNT"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
@@ -108,7 +108,7 @@ class Project(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_PROJECT"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 

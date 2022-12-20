@@ -56,6 +56,10 @@ def validateFormData(formData):
     if "date_of_birth" in formData:
         pass
 
+    if "edu_hightest_year" in formData:
+        if int(formData["edu_hightest_year"]) < 1900 and int(formData["edu_hightest_year"]) > 2030:
+            errors.append("- Please enter a valid year.")
+
     print("ERROR", errors)
     return "SUCCESS" if errors == [] else "ERROR: Please correct the below errors before submitting the form.<br/>" + '<br/>'.join([ item for item in errors])
 

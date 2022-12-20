@@ -70,7 +70,7 @@
         <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
             <thead>
                 <tr class="text-center" style="background-color:#D6EAF8">
-                    <th scope="col" colspan="2" style="width:10%">Action</th>
+                    <th scope="col" colspan="3" style="width:25%">Action</th>
                     <th scope="col">Period</th>
                     <th scope="col">Status</th>
                     <th scope="col">Payroll Details</th>
@@ -85,13 +85,15 @@
                     <td class="text-center"><a href="/payroll/details/delete/{{item.id}}"><i
                                 class="fa-solid fa-trash fa-flip-horizontal"></i></a>
                     </td>
+                    {% if item.proll_status != "DRAFT" %}
+                    <td class="text-center"><a href="/payroll/details/delete/{{item.id}}">View Details</a>
+                    </td>
+                    {% else %}
+                    <td><a href="/payroll/details/generate/{{item.id}}">Generate Payroll Details</a></td>
+                    {% endif %}
                     <td>{{item.proll_year}} / {{item.proll_month}}</td>
                     <td>{{item.proll_status}}</td>
-                    {% if item.proll_status != "DRAFT" %}
                     <td>{{item.detailcount}}</td>
-                    {% else %}                    
-                    <a href="/payroll/details/generate/{{item.id}}"><td>Generate Payroll Details</td></a>
-                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

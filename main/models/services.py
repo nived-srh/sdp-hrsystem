@@ -32,7 +32,7 @@ class DailyStatus(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_DAILYSTATUS"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
@@ -74,7 +74,7 @@ class Vacation(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_VACATION"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 

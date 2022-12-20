@@ -32,7 +32,7 @@ class Tier(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_TIER"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
@@ -99,7 +99,7 @@ class Payroll(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_PAYROLL"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : " + commitStatus
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
