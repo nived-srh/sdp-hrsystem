@@ -22,6 +22,7 @@ class Person(base.Model):
     addr_zip = Column(String)
     profile_id = Column(Integer, ForeignKey("profile.id"))
     profile = relationship("Profile", back_populates="persons")
+    managedprojects = relationship("Project", back_populates="manager")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
     def __init__(self, formData = None):

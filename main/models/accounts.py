@@ -88,6 +88,7 @@ class Project(base.Model):
     manager_id = Column(Integer, ForeignKey('person.id'))
     project_status = Column(String)
     account = relationship("Account", back_populates="projects")
+    manager = relationship("Person", back_populates="managedprojects")
     children = relationship("ProjectAssignment", back_populates="project")
     def __init__(self, formData = None):
         if formData != None:
@@ -141,7 +142,7 @@ class Project(base.Model):
 
     def fetchProjectWithUserCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
         if queryParams == None:
-            queryParams = " account.id = project.account_id AND "
+            queryParams = " account.id = project.account_id "
         return db.fetchData('account, project, person', "id, project_name, project_descr, project_active, project_default, project_payscale, (SELECT COUNT(id) FROM person WHERE person.account_id = project.id)" , queryParams, queryLimit)
 
     def fetchProjects(self, db, queryFields = None, queryParams = None, queryLimit = None):

@@ -81,19 +81,13 @@ def initializeDB(db):
     formData["username"] = "admin"
     formData["email"] = "admin@hrs.com"
     formData["password"] = "admin"
-    formData["last_name"] = "admin"
+    formData["last_name"] = "Admin"
+    formData["first_name"] = "IT"
+    formData["date_of_birth"] = "2004-01-01"
     formData["profile_id"] = 1
     
     emp = Employee()
     results.append(emp.createEmployeeForm(db, formData))
-
-    formData["username"] = "manager"
-    formData["email"] = "manager"
-    formData["password"] = "manager"
-    formData["last_name"] = "manager"
-    formData["profile_id"] = 4
-    emp2 = Employee()
-    results.append(emp2.createEmployeeForm(db, formData))
 
     return results
     
