@@ -17,11 +17,11 @@ class ITResource(base.Model):
         if formData != None:
             self.resource_name = formData["resource_name"]
             self.resource_descr = formData["resource_descr"] if "resource_descr" in formData else ""
-            self.resource_status = str(formData["resource_status"]).upper() if "resource_status" in formData else "ACTIVE"
+            self.resource_status = str(formData["resource_status"] if "resource_status" in formData else "ACTIVE").upper()
             self.resource_type = formData["resource_type"] if "resource_type" in formData else "HARDWARE"    
             self.resource_serialnumber = formData["resource_serialnumber"] if "resource_serialnumber" in formData else ""        
             self.resource_assignedto = formData["resource_person_id"] if "resource_person_id" in formData else None     
-            self.resource_externalid = self.resource_serialnumber + "_" + self.resource_status
+            self.resource_externalid = str(self.resource_serialnumber) + "_" + self.resource_status
 
     def createITResourceForm(self, db, formData):
         self.__init__(formData)
@@ -46,11 +46,11 @@ class ITResource(base.Model):
         recordToEdit = session.query(ITResource).filter(ITResource.id==formData["resource_id"]).first()
         recordToEdit.resource_name = formData["resource_name"]
         recordToEdit.resource_descr = formData["resource_descr"] if "resource_descr" in formData else recordToEdit.resource_descr
-        recordToEdit.resource_status = str(formData["resource_status"] if "resource_status"  in formData else recordToEdit.resource_status).upper
+        recordToEdit.resource_status = str(formData["resource_status"] if "resource_status"  in formData else recordToEdit.resource_status).upper()
         recordToEdit.resource_type = formData["resource_status"] if "resource_status"  in formData else recordToEdit.resource_type   
         recordToEdit.resource_serialnumber = formData["resource_serialnumber"] if "resource_serialnumber" in formData else recordToEdit.resource_serialnumber     
-        recordToEdit.resource_assignedto = formData["resource_assignedto"] if "resource_assignedto" in formData else recordToEdit.resource_assignedto
-        recordToEdit.resource_externalid = recordToEdit.resource_serialnumber + "_" + recordToEdit.resource_status
+        recordToEdit.resource_assignedto = formData["resource_person_id"] if "resource_person_id" in formData else recordToEdit.resource_assignedto
+        recordToEdit.resource_externalid = str(recordToEdit.resource_serialnumber) + "_" + str(recordToEdit.resource_status)
         commitStatus = db.commitSession(session)
         return commitStatus
 

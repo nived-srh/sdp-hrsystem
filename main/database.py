@@ -45,6 +45,7 @@ class DatabaseConnect():
             commitStatus = "SUCCESS"
         except Exception as err:
             session.rollback()
+            print("ERROR_ROLLBACK :", str(err))
             commitStatus = "ERROR_ROLLBACK : ON DBCOMMIT" 
         finally: 
             if autoClose:
@@ -83,6 +84,7 @@ class DatabaseConnect():
         try:
             results = self.session.execute(sql)
         except Exception as err:
+            print("ERROR_SQL_EXECUTE :", str(err))
             results = "ERROR : SQL_EXECUTE"
         finally: 
             if autoCommit:

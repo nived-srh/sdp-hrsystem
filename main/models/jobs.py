@@ -1,6 +1,7 @@
 from . import base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+from datetime import date
 
 class JobListing(base.Model):
     __tablename__ = 'joblisting'
@@ -25,6 +26,7 @@ class JobListing(base.Model):
 
     def createJobListingForm(self, db, formData):
         self.__init__(formData)
+        self.created_at = date.today()
         return self.createJobListing(db)
 
     def createJobListing(self, db):
@@ -124,5 +126,5 @@ class JobApplication(base.Model):
         
     def fetchJobApplicationWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
         if queryParams == None:
-            queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND candidate.id = person.id"
-        return db.fetchData('jobapplication, joblisting, candidate, person', "jobapplication.id, application_status, application_comment, job_title, job_descr", queryParams, queryLimit)
+            queryParams = " jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND candidate.id = person.id ORDER BY joblisting.job_title"
+        return db.fetchData('jobapplication, joblisting, candidate, person', "jobapplication.id, application_status, application_comment, job_title, job_descr, email, first_name, last_name, candidate_id", queryParams, queryLimit)

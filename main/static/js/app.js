@@ -60,6 +60,7 @@ $( document ).ready(function() {
             }
         }else if(people_data.table == "itresources"){
             if(people_data.action == "create" || people_data.action == "edit"){
+                fetchData('persons','#resource_person_id');
                 toggleForm('ITResourcesForm');
             }
         }

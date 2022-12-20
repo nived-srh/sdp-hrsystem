@@ -307,7 +307,7 @@ def userSettings(table, action):
     return render_template("settings.html", response=response)
 
 @app.route("/itresources", defaults={'action': None, 'key': None }, methods=["GET", "POST"])
-@app.route("/itresources/<action>", defaults={'key': None }, methods=["GET"])
+@app.route("/itresources/<action>", defaults={'key': None },  methods=["GET", "POST"])
 @app.route("/itresources/<action>/<key>", methods=["GET"])
 def itResources(action, key):
     if 'userSession' not in session:        
@@ -325,15 +325,26 @@ def itResources(action, key):
     response["action"] = action
     response["key"] = key
 
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
     if request.method == 'POST':
         formData = dict(request.form)
-        if action == 'create':
-            response["messages"] = infrastructure.ITResource().createITResourceForm(db,formData)
-        elif action == 'edit':
-            response["messages"] = infrastructure.ITResource().editITResourceForm(db,formData)
-    elif key != None:
         if action == 'edit':
             response["messages"] = infrastructure.ITResource().editITResourceForm(db,formData)
+        elif action == 'create':
+            response["messages"] = infrastructure.ITResource().createITResourceForm(db,formData)
+        return redirect("/itresources?msg=" + response["messages"])
+        
+    elif key != None:
+        if action == 'edit':
+            result = list(infrastructure.ITResource().fetchITResources(db, queryParams=" id = '" + key + "'", queryLimit="1"))[0]
+            formData["resource_id"] = key
+            formData["resource_name"] = result.resource_name
+            formData["resource_descr"] = result.resource_descr
+            formData["resource_serialnumber"] = result.resource_serialnumber
+            formData["resource_status"] = result.resource_status
+            formData["resource_type"] = result.resource_type
         elif action == 'delete':
             response["messages"] = infrastructure.ITResource().deleteITResources(db,list(key))
     response["formData"] = formData
@@ -445,7 +456,7 @@ def jobportal(table, action, key):
         response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
         return render_template("jobs.html", response=response)
          
-@app.route("/recruitment",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
+@app.route("/recruitment",  defaults={'table': None, 'action' : None, 'key': None }, methods=['GET'])
 @app.route("/recruitment/<table>", defaults={'action' : None, 'key': None }, methods=['GET'])
 @app.route("/recruitment/<table>/<action>", defaults={'key': None}, methods=['GET','POST'])
 @app.route("/recruitment/<table>/<action>/<key>", methods=['GET','POST'])
@@ -789,10 +800,10 @@ def fetchData(table, limit):
             "field_name" : row.tier_name    
         } for row in results]
     elif table == "persons":
-        results = users.Person().fetchPersons(db)
+        results = users.Person().fetchPersons(db, queryParams=" user_type != 'candidate' ")
         response = [{
             "id": row.id , 
-            "field_name" : row.last_name + ", " + row.first_name     
+            "field_name" : row.last_name + ( ", " + row.first_name  if row.first_name != "" else "" )
         } for row in results]
     elif table == "accounts":
         results = accounts.Account().fetchAccounts(db)

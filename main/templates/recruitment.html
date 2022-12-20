@@ -136,8 +136,8 @@
                                             value="{{response['formData']['job_location']}}">
                                     </div>
                                     <div class="col-xs-3 flex-grow-1">
-                                        <label for="salutation">Listing Status</label>
-                                        <select class="form-control" id="salutation">
+                                        <label for="job_status">Listing Status</label>
+                                        <select class="form-control" id="job_status" name="job_status" value="{{response['formData']['job_status']}}">
                                             <option>OPEN</option>
                                             <option>CLOSED</option>
                                             <option>ON HOLD</option>
@@ -203,6 +203,7 @@
         {% endif %}
 
         {% if "candidateApplications" in response and response["candidateApplications"] != None %}
+        {% if response["candidateApplications"].rowcount > 0 %}
         <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
             <thead>
                 <tr>
@@ -213,19 +214,39 @@
                     </th>
                 </tr>
                 <tr class="text-center" style="background-color:#D6EAF8">
-                    <th scope="col" colspan="1" style="width:10%">Action</th>
-                    <th scope="col">Job Location</th>
+                    {% if "recruitment" in request.path %}
+                    <th scope="col" colspan="3" style="width:10%">Action</th>
+                    {% endif %}     
+                    <th scope="col">Job Title</th>
+                    <th scope="col">Job Description</th>
+                    <th scope="col">HR Comment</th>
+                    <th scope="col">Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in response["candidateApplications"] %}
                 <tr>
+                    {% if "recruitment" in request.path %}
                     <td class="text-center">
-                        <a href="/recruitment/candidate/hire/{{response['key']}}">
+                        <a href="/recruitment/candidate/hired/{{item.id}}?returnUrl=/recruitment/candidate/read/{{ response['key'] }}">
                             Hire
                         </a>
                     </td>
-                    <td>{{item.last_name}}</td>
+                    <td class="text-center">
+                        <a href="/recruitment/candidate/rejected/{{item.id}}?returnUrl=/recruitment/candidate/read/{{ response['key'] }}">
+                            Reject
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <a href="/recruitment/candidate/shortlisted/{{item.id}}?returnUrl=/recruitment/candidate/read/{{ response['key'] }}">
+                            Shortlist
+                        </a>
+                    </td>
+                    {% endif %}
+                    <td>{{item.job_title}}</td>
+                    <td>{{item.candidate_id}}</td>
+                    <td>{{item.application_comment}}</td>
+                    <td>{{item.application_status}}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -234,6 +255,7 @@
         <p class="text-center text-muted">
             No applications found.
         </p>
+        {% endif %}
         {% endif %}
     </div>
     {% endif %}
