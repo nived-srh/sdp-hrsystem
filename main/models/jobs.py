@@ -41,7 +41,7 @@ class JobListing(base.Model):
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
-            return "ERROR_INS_JOBLISTING" 
+            return "ERROR : INS_JOBLISTING" 
 
     def editJobListingForm(self, db, formData):
         session = db.initiateSession()
@@ -66,7 +66,7 @@ class JobListing(base.Model):
             elif isinstance(jobListingIds, list):
                 params = 'id IN (' + ','.join([ '\'' + jl + '\'' for jl in jobListingIds]) + ')' 
             return db.fetchData('joblisting', None, params, None) 
-        return "ERROR_MISSING_JOBLISTINGIDS"
+        return "ERROR : MISSING_JOBLISTINGIDS"
 
     def fetchJobListingWithApplicantCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('joblisting', "id, created_at, job_title, job_descr, job_exp, job_location, job_status, job_role, (SELECT COUNT(id) FROM jobapplication WHERE jobapplication.job_id = joblisting.id)" , queryParams, queryLimit)
@@ -91,11 +91,24 @@ class JobApplication(base.Model):
 
     def createJobApplicationForm(self, db, formData):
         if "job_id" in formData and "candidate_id" in formData:
-            self.__init__(formData)
-            self.application_date = date.today()
-            self.createJobApplication(db)
             
-        return "ERROR_MISSING_REQUIRED_IDS"
+            queryParams = " id = '"  +  str(formData["job_id"]) + "' AND job_status = 'OPEN'"
+            activeJobs = JobListing().fetchJobListings(db, queryParams=queryParams)
+            if activeJobs == "ERROR : SQL_EXECUTE":
+                return "ERROR : SQL_EXECUTE"
+            if activeJobs == None or activeJobs.rowcount == 0:
+                return "ERROR : JOB_LISTINNG_INACTIVE"
+            queryParams = " job_id = '"  +  str(formData["job_id"]) + "' AND candidate_id = '" + str(formData["candidate_id"]) + "' "
+            existingRecords = self.fetchJobApplication(db, queryParams=queryParams)
+            if existingRecords == "ERROR : SQL_EXECUTE":
+                return "ERROR : SQL_EXECUTE"
+            if existingRecords == None or existingRecords.rowcount == 0:
+                self.__init__(formData)
+                self.application_date = date.today()
+                return self.createJobApplication(db)
+            else:
+                return "ERROR : DUPLICATE_APPPLICATION"
+        return "ERROR : MISSING_REQUIRED_IDS"
 
     def createJobApplication(self, db):
         try:
@@ -105,11 +118,11 @@ class JobApplication(base.Model):
             if commitStatus == "SUCCESS":
                 return "INSERTED_JOBAPPLICATION"
             else:
-                return "ERROR_DBCOMMIT"
+                return "ERROR : DBCOMMIT"
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
-            return "ERROR_INS_JOBAPPLCATION" 
+            return "ERROR : INS_JOBAPPLCATION" 
 
     def updateApplicationStatus(self, db, recordId, status):
         session = db.initiateSession()

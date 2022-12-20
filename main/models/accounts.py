@@ -44,19 +44,19 @@ class Account(base.Model):
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
-            return "ERROR_INS_ACCOUNT"
+            return "ERROR : INS_ACCOUNT"
 
     def editAccountForm(self, db, formData):
         session = db.initiateSession()
         recordToEdit = session.query(Account).filter(Account.id==formData["account_id"]).first()
-        recordToEdit.account_name = formData["account_name"] 
-        recordToEdit.account_type = formData["account_type"] 
-        recordToEdit.account_status = formData["account_status"] 
-        recordToEdit.addr_line = formData["addr_line"] if "addr_line" in formData else ""
-        recordToEdit.addr_city = formData["addr_city"] if "addr_city" in formData else ""
-        recordToEdit.addr_state = formData["addr_state"] if "addr_state" in formData else ""
-        recordToEdit.addr_country = formData["addr_country"] if "addr_country" in formData else ""
-        recordToEdit.addr_zip = formData["addr_zip"] if "addr_zip" in formData else ""
+        recordToEdit.account_name = formData["account_name"] if "account_name" in formData else recordToEdit.account_name
+        recordToEdit.account_type = formData["account_type"] if "account_type" in formData else recordToEdit.account_type
+        recordToEdit.account_status = formData["account_status"] if "account_status" in formData else recordToEdit.account_status
+        recordToEdit.addr_line = formData["addr_line"] if "addr_line" in formData else recordToEdit.addr_line
+        recordToEdit.addr_city = formData["addr_city"] if "addr_city" in formData else recordToEdit.addr_city
+        recordToEdit.addr_state = formData["addr_state"] if "addr_state" in formData else recordToEdit.addr_state
+        recordToEdit.addr_country = formData["addr_country"] if "addr_country" in formData else recordToEdit.addr_zip
+        recordToEdit.addr_zip = formData["addr_zip"] if "addr_zip" in formData else recordToEdit.addr_zip
         commitStatus = db.commitSession(session)
         return commitStatus
 
@@ -72,10 +72,10 @@ class Account(base.Model):
             elif isinstance(recordIds, list):
                 params = 'id IN (' + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ')' 
             return db.fetchData('Account', None, params, None) 
-        return "ERROR_MISSING_AccountIDS"
+        return "ERROR : MISSING_AccountIDS"
 
     def fetchAccountWithProjectCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('account', "id, acc_name, acc_type, acc_status, addr_line, addr_city, addr_state, addr_country, addr_zip, (SELECT COUNT(id) FROM project WHERE project.account_id = account.id)" , queryParams, queryLimit)
+        return db.fetchData('account', "id, acc_name, acc_type, acc_status, addr_line, addr_city, addr_state, addr_country, addr_zip, (SELECT COUNT(id) FROM project WHERE project.account_id = account.id) AS count" , queryParams, queryLimit)
 
     def fetchAccounts(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('account', queryFields, queryParams, queryLimit)
@@ -85,16 +85,16 @@ class Project(base.Model):
     id = Column(Integer, primary_key=True)
     description = Column(String)
     account_id = Column(Integer, ForeignKey("account.id"))
+    manager_id = Column(Integer, ForeignKey('person.id'))
+    project_status = Column(String)
     account = relationship("Account", back_populates="projects")
     children = relationship("ProjectAssignment", back_populates="project")
     def __init__(self, formData = None):
         if formData != None:
             self.description = formData["description"] if "description" in formData else ""
-            self.account_id = formData["account_id"] if "account_id" in formData else ""
-            if "account_id" in formData:
-                self.account_id = formData["account_id"]
-            elif "account" in formData:
-                self.account = formData["account"]
+            self.account_id = formData["project_account_id"] if "project_account_id" in formData else None
+            self.manager_id = formData["project_manager_id"] if "project_manager_id" in formData else None
+            self.project_status = formData["project_status"] if "project_status" in formData else "ACTIVE"
 
     def createProjectForm(self, db, formData):
         self.__init__(formData)
@@ -112,14 +112,16 @@ class Project(base.Model):
         except Exception as err:
             if "duplicate key" in str(err):
                 return "ERROR : DUPLICATE KEY" 
-            return "ERROR_INS_PROJECT"
+            return "ERROR : INS_PROJECT"
 
     def editProjectForm(self, db, formData):
         session = db.initiateSession()
-        recordToEdit = session.query(Project).filter(Project.id==formData["Project_id"]).first()
-        recordToEdit.project_id = formData["id"] 
-        recordToEdit.project_description = formData["description"] 
-        recordToEdit.project_account_id = formData["account_id"] 
+        recordToEdit = session.query(Project).filter(Project.id==formData["project_id"]).first()
+        recordToEdit.project_id = formData["project_id"] if "project_id" in formData else recordToEdit.project_id
+        recordToEdit.project_description = formData["project_description"] if "project_description" in formData else recordToEdit.project_description
+        recordToEdit.account_id = formData["project_account_id"] if "project_account_id" in formData else recordToEdit.account_id
+        recordToEdit.manager_id = formData["project_manager_id"] if "project_manager_id" in formData else recordToEdit.manager_id
+        recordToEdit.project_status = formData["project_status"] if "project_status" in formData else recordToEdit.project_status
         commitStatus = db.commitSession(session)
         return commitStatus
 
@@ -135,10 +137,12 @@ class Project(base.Model):
             elif isinstance(recordIds, list):
                 params = 'id IN (' + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ')' 
             return db.fetchData('Project', None, params, None) 
-        return "ERROR_MISSING_ProjectIDS"
+        return "ERROR : MISSING_ProjectIDS"
 
     def fetchProjectWithUserCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('project, person', "id, project_name, project_descr, project_active, project_default, project_payscale, (SELECT COUNT(id) FROM person WHERE person.account_id = project.id)" , queryParams, queryLimit)
+        if queryParams == None:
+            queryParams = " account.id = project.account_id AND "
+        return db.fetchData('account, project, person', "id, project_name, project_descr, project_active, project_default, project_payscale, (SELECT COUNT(id) FROM person WHERE person.account_id = project.id)" , queryParams, queryLimit)
 
     def fetchProjects(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('project', queryFields, queryParams, queryLimit)

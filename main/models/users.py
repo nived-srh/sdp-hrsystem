@@ -1,5 +1,5 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence, LargeBinary, Date
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Sequence, LargeBinary, Date, Float
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -53,8 +53,8 @@ class Person(base.Model):
                     if check_password_hash(row.hashed_password,password):
                         return row
                     else:
-                        return "ERROR_INVALID_CREDENTIALS"
-            return "ERROR_USER_NOT_FOUND"
+                        return "ERROR : INVALID_CREDENTIALS"
+            return "ERROR : USER_NOT_FOUND"
         except Exception as err:
             return "ERROR : " + str(err)
 
@@ -136,11 +136,11 @@ class Employee(Person):
         self.num_vacations = 30
         self.tier_id = formData["tier_id"] if "tier_id" in formData else None
         super(Employee, self).__init__(formData)     
-        existingUsers = self.fetchByUsername(db, self.username)
-        if existingUsers == None or list(existingUsers) == []:
+        existingRecords = self.fetchByUsername(db, self.username)
+        if existingRecords == None or existingRecords.rowcount == 0:
             return self.createEmployee(db)
         else:
-            return "DUPLICATE_USER"
+            return "ERROR : DUPLICATE_USER"
 
     def createEmployee(self, db):        
         try:
@@ -198,11 +198,11 @@ class External(Person):
         self.user_type = "external"
         self.ext_type = formData["ext_type"]
         super(External, self).__init__(formData)  
-        existingUsers = None#self.fetchByUsername(db, self.username)
-        if existingUsers == None or list(existingUsers) == []:
+        existingRecords = self.fetchByUsername(db, self.username)
+        if existingRecords == None or existingRecords.rowcount == 0:
             return self.createExternal(db)
         else:
-            return "DUPLICATE_USER"
+            return "ERROR : DUPLICATE_USER"
 
     def createExternal(self, db):
         try:
@@ -230,7 +230,7 @@ class Candidate(Person):
     edu_hightest_institution = Column(String, default="")
     edu_hightest_grade = Column(String, default="")
     edu_hightest_year = Column(Integer, default=None)
-    work_exp_years = Column(Integer, default=0)
+    work_exp_years = Column(Float, default=0)
     work_exp_comment = Column(String, default="")
     linkedin_username = Column(String, default="")
 
@@ -238,7 +238,6 @@ class Candidate(Person):
         super().__init__()
 
     def createCandidateForm(self, db, formData):
-
         self.user_type = "candidate"
         formData["username"] = formData["email"]
         self.username = formData["username"]        
@@ -248,13 +247,13 @@ class Candidate(Person):
         self.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else ""
         self.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else None
         self.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else ""
-        self.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else 0
+        self.work_exp_years = float(formData["work_exp_years"]) if "work_exp_years" in formData else 0
         self.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else ""
-        existingUsers = self.fetchByUsername(db, self.username)
-        if existingUsers == None or list(existingUsers) == []:
+        existingRecords = self.fetchByUsername(db, self.username)
+        if existingRecords == None or existingRecords.rowcount == 0:
             return self.createCandidate(db)
         else:
-            return "DUPLICATE_USER"
+            return "ERROR : DUPLICATE_USER"
 
     def createCandidate(self, db):
         try:
@@ -281,7 +280,7 @@ class Candidate(Person):
         candidateToEdit.edu_hightest_institution = formData["edu_hightest_institution"] if "edu_hightest_institution" in formData else candidateToEdit.edu_hightest_institution
         candidateToEdit.edu_hightest_year = formData["edu_hightest_year"] if "edu_hightest_year" in formData else candidateToEdit.edu_hightest_year
         candidateToEdit.linkedin_username = formData["linkedin_username"] if "linkedin_username" in formData else candidateToEdit.linkedin_username
-        candidateToEdit.work_exp_years = int(formData["work_exp_years"]) if "work_exp_years" in formData else candidateToEdit.work_exp_years
+        candidateToEdit.work_exp_years = float(formData["work_exp_years"]) if "work_exp_years" in formData else candidateToEdit.work_exp_years
         candidateToEdit.work_exp_comment = formData["work_exp_comment"] if "work_exp_comment" in formData else candidateToEdit.work_exp_comment
 
         commitStatus = db.commitSession(session)

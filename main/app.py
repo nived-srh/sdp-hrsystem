@@ -407,7 +407,7 @@ def jobportal(table, action, key):
                 response["messages"] = users.Candidate().editCandidateForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     result = list(users.Person().fetchPersons(db, queryParams=" user_type = 'candidate' and username = '" + formData["email"] + "'", queryLimit="1"))[0]
-                    activeUser = { 'baseUrl' : '/' if result.user_type != 'candidate' else '/jobs/myapplication' , 'username' : result.username, 'id':result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}         
+                    activeUser = { 'baseUrl' : '/' if result.user_type != 'candidate' else '/jobs/myapplication' , 'username' : result.username, 'id' : result.id, 'email' : result.email, 'first_name':result.first_name, 'last_name':result.last_name}         
                     session.pop('userSession', None)
                     session['userSession'] = activeUser
                     response['userSession'] = session
@@ -433,7 +433,7 @@ def jobportal(table, action, key):
                 response["messages"] = jobs.JobApplication().createJobApplicationForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/jobs/myapplication?msg=" + response["messages"])
-            table = "myapplication"
+            return redirect("/jobs/myapplication?msg=" + response["messages"])
             
         if table == "myapplication":
             if action == "delete":
@@ -448,15 +448,18 @@ def jobportal(table, action, key):
             formData["email"] = candidate.email
             formData["resume_filename"] = candidate.resume_filename
             formData["linkedin_username"] = candidate.linkedin_username
-            formData["edu_hightest"] = candidate.linkedin_username
-            formData["edu_hightest_institution"] = candidate.linkedin_username
+            formData["edu_hightest"] = candidate.edu_hightest
+            formData["edu_hightest_institution"] = candidate.edu_hightest_institution
             formData["edu_hightest_grade"] = candidate.edu_hightest_grade
             formData["edu_hightest_year"] = candidate.edu_hightest_year
+            formData["work_exp_years"] = candidate.work_exp_years
+            formData["work_exp_comment"] = candidate.work_exp_comment
             response["formData"] = formData
 
-            response["jobapplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db)
+            queryParams = " jobapplication.candidate_id = '" + str(session["userSession"]["id"]) + "' AND jobapplication.job_id = joblisting.id AND jobapplication.candidate_id = candidate.id AND candidate.id = person.id "
+            response["jobapplications"] = jobs.JobApplication().fetchJobApplicationWithDetails(db, queryParams=queryParams)
             return render_template("myapplications.html", response=response)
-        response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status != 'INACTIVE' ORDER BY job_role, id DESC")
+        response["joblistings"] = jobs.JobListing().fetchJobListings(db, queryParams=" job_status = 'OPEN' ORDER BY job_title ASC")
         return render_template("jobs.html", response=response)
          
 @app.route("/recruitment",  defaults={'table': None, 'action' : None, 'key': None }, methods=['GET'])

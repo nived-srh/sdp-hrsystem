@@ -53,12 +53,17 @@
                                             <option>Customer</option>
                                             <option>Consultant</option>
                                             <option>Contractor</option>
-                                        </select>    
+                                        </select>
                                     </div>
                                     <div class="col-xs-4 flex-grow-1 ml-4">
                                         <label for="acc_status">Status</label>
-                                        <input type="text" class="form-control" id="acc_status" name="acc_status"
+                                        <select class="form-control" id="acc_status" name="acc_status"
                                             value="{{response['formData']['acc_status']}}">
+                                            <option>ACTIVE</option>
+                                            <option>PENDING CONTRACT</option>
+                                            <option>CONTRACT EXPIRED</option>
+                                            <option>INACTIVE</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="form-group d-flex flex-row justify-content-between mb-2">
@@ -144,7 +149,8 @@
                     <td>{{item.acc_name}}</td>
                     <td>{{item.acc_type}}</td>
                     <td>{{item.acc_status}}</td>
-                    <td>{{item.addr_line}}, {{item.addr_city}}, {{item.addr_state}}, {{item.addr_country}}, {{item.addr_zip}}</td>
+                    <td>{{item.addr_line}}, {{item.addr_city}}, {{item.addr_state}}, {{item.addr_country}},
+                        {{item.addr_zip}}</td>
                     <td>{{item.count}}</td>
                 </tr>
                 {% endfor %}
@@ -152,8 +158,8 @@
         </table>
         {% else %}
         <p class="text-center text-muted">No accounts found. Click on <a href="#" id="addAccountsButton"
-            onclick="toggleForm('AccountsForm');">"Add Accounts"</a> button to create accounts in the
-        system.
+                onclick="toggleForm('AccountsForm');">"Add Accounts"</a> button to create accounts in the
+            system.
         </p>
         {% endif %}
         {% endif %}
@@ -162,8 +168,9 @@
     <div id="Projects" class="tabcontent">
         <div class="d-flex flex-column bd-highlight">
             <div class="pt-2 bd-highlight">
-                <a href="#" id="addProjectsButton" onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');" style="float:right;"><button
-                        class="btn btn-outline-primary btn-sm" type="button">Add
+                <a href="#" id="addProjectsButton"
+                    onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');"
+                    style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add
                         Projects</button></a>
             </div>
             <div class="bd-highlight">
@@ -229,7 +236,8 @@
         </table>
         {% else %}
         <p class="text-center text-muted">No Projects found. Click on <a href="#" id="addAccountsButton"
-                onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');">"Add Projects"</a> button to create projects in the
+                onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');">"Add Projects"</a>
+            button to create projects in the
             system.
         </p>
         {% endif %}
