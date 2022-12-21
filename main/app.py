@@ -90,26 +90,18 @@ def globalSearch():
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
-    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)
 
-    return render_template("search.html", response=response)
-    if "accounts" in response["views"] :
-        response["accounts"] = None#accounts.Account().search(db, session['userSession'], views["accounts"])
-    elif "projects" in response["views"] :
-        response["projects"] = None
-    elif "employee" in response["views"] :
-        response["employee"] = users.Employee().fetchEmployeesWithDetails(db)
-    elif "consultants" in response["views"] :
-        response["consultants"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONSULTANT' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
-    elif "contractors" in response["views"] :
-        response["contractors"] = users.External().fetchExternalsWithDetails(db, queryParams=" person.profile_id = profile.id AND external.ext_type = 'CONTRACTOR' AND person.user_type = 'external' AND person.id = external.person_id ORDER BY person.id DESC")
-    elif "profiles" in response["views"] :
-        response["profiles"] = None
-    elif "views" in response["views"] :
-        response["views"] = None
-    elif "payroll" in response["views"] :
-        response["payroll"] = payroll.Payroll().fetchPayrolls(db)
-
+    if request.method == 'POST':
+        response["searchTerm"] = request.form["searchTerm"]
+        if "accounts" in response["views"] :
+            response["accounts"] = accounts.Account().fetchAccountWithProjectCount(db, queryLimit="5")    
+        elif "projects" in response["views"] :
+            response["projects"] = accounts.Project().fetchProjectWithUserCount(db, queryLimit="10") 
+        elif "employee" in response["views"] :
+            response["employee"] = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY person.id DESC", queryLimit="5")
+        elif "consultants" in response["views"] or "contractors" in response["views"]  :
+            response["consultants"] = users.Person().fetchPersons(db, queryParams=" user_type = 'external' ORDER BY person.id DESC", queryLimit="5")
+            
     return render_template("search.html", response=response)
 
 @app.route("/profile", defaults={'table': 'employee', 'action' : "read", 'key': 'self' }, methods=["GET"])

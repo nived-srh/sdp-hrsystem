@@ -5,6 +5,7 @@
 <div class="container-fluid px-5">
     <h1 class="mb-4">Search Results</h1>
 
+    {% if "payrolls" in response and response["payrolls"] != None %}
     {% if response["payrolls"].rowcount > 0 %}
     <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
         <thead>
@@ -36,6 +37,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
     {% endif %}
 
     {% if "defaultviews" in response %}
