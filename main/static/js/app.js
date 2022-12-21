@@ -32,6 +32,7 @@ $( document ).ready(function() {
                 toggleForm('EmployeeForm');
                 fetchData('profiles','#employee_profile_id');
                 fetchData('tiers','#employee_tier_id');
+                fetchData('managers','#employee_manager_id');
             }
         }else if(people_data.table == "profiles"){
             if(people_data.action == "create" || people_data.action == "edit"){
@@ -57,11 +58,24 @@ $( document ).ready(function() {
             document.getElementById("manageProjects").click();
             if(people_data.action == "create" || people_data.action == "edit"){
                 toggleForm('ProjectsForm');
+                fetchData('accounts','#project_account_id');
+                fetchData('managers','#project_manager_id');
+            }
+        }else if(people_data.table == "projectassignments"){
+            document.getElementById("manageProjectAssignments").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                fetchData('persons','#prjasgn_person_id');
+                fetchData('projects','#prjasgn_project_id');
             }
         }else if(people_data.table == "itresources"){
             if(people_data.action == "create" || people_data.action == "edit"){
                 fetchData('persons','#resource_person_id');
                 toggleForm('ITResourcesForm');
+            }
+        }else if(people_data.table == "bonus"){
+            document.getElementById("manageBonuses").click();
+            if(people_data.action == "create" || people_data.action == "edit"){
+                fetchData('persons','#bonus_person_id');
             }
         }
     }

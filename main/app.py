@@ -42,7 +42,10 @@ def home():
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
-    
+
+    response["employees"] = users.Person().fetchPersons(db, queryParams=" user_type = 'employee' ORDER BY person.id DESC", queryLimit="5")
+    response["accounts"] = accounts.Account().fetchAccountWithProjectCount(db, queryLimit="5")    
+    response["projects"] = accounts.Project().fetchProjectWithUserCount(db, queryLimit="10")     
     return render_template("base.html", response=response)
 
 @app.route("/login", methods=['GET','POST'])
@@ -109,11 +112,14 @@ def globalSearch():
 
     return render_template("search.html", response=response)
 
-@app.route("/profile", methods=["GET", "POST"])
-def profile():
+@app.route("/profile", defaults={'table': 'employee', 'action' : "read", 'key': 'self' }, methods=["GET"])
+@app.route("/profile/<table>", defaults={'action' : "read", 'key': 'self' }, methods=['GET'])
+@app.route("/profile/<table>/<action>", defaults={ 'key': 'self' }, methods=['GET'])
+@app.route("/profile/<table>/<action>/<key>", methods=["GET"])
+def profile(table, action, key):
     if 'userSession' not in session:        
         return redirect(url_for('login'))
-        
+ 
     global db
     if db == None:
         db = DatabaseConnect(AppConfig.SQLALCHEMY_DATABASE_URI)
@@ -122,17 +128,47 @@ def profile():
     response["views"] = utils.fetchSidebarLinks(db, session['userSession']["username"])    
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
+    response["table"] = table
+    response["action"] = action
+    response["key"] = key
 
-    if request.method == 'POST':
-        formData = dict(request.form)
-        formData["employee_id"] = session['userSession']['id']
-        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
-        response["messages"] = new_status
-    else:        
-        formData = {}
-        formData["status_date"] = date.today()
-        response["formData"] = formData
-    response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
+    if key == "self":
+        record_id = session['userSession']["id"]
+    else:
+        record_id = key
+
+    if table == "employee":
+        if action == "resign":
+            formData = {}
+            formData["user_status"] = "INITIARED RESIGNATION"
+            result = users.Employee().editEmployeeForm(db,formData)
+        queryParams = "employee.person_id = person.id AND person.profile_id = profile.id AND person.id = '" + str(record_id) + "' "
+        queryFields = "person.id, num_vacations, employee_id, email, username, salutation, person.first_name, last_name, profile.id AS profile_id, manager_id, tier_id, profile.profile_name, user_dob, addr_line, addr_city, addr_state, addr_country, addr_zip, phone_number"
+        employeeDetails = users.Employee().fetchEmployeesWithDetails(db, queryFields=queryFields, queryParams=queryParams, queryLimit="1")     
+        if employeeDetails.rowcount > 0:
+            response["recDetails"] = list(employeeDetails)[0]  
+        else: 
+            response["messages"] = "ERROR : USER NOT FOUND"
+
+    elif table == "consultant" or table == "contractor":
+        queryParams = "external.person_id = person.id AND person.profile_id = profile.id AND person.id = '" + str(record_id) + "' "
+        queryFields = "person.id, email, username, salutation, person.first_name, last_name, profile.id AS profile_id, tier_id, profile.profile_name, user_dob, addr_line, addr_city, addr_state, addr_country, addr_zip, phone_number"
+        recDetails = users.External().fetchExternalsWithDetails(db, queryFields=queryFields, queryParams=queryParams, queryLimit="1")     
+        if recDetails.rowcount > 0:
+            response["recDetails"] = list(recDetails)[0]  
+        else: 
+            response["messages"] = "ERROR : USER NOT FOUND"
+
+    elif table == "candidate":
+        candidateUrl = "/recruitment/candidate/read/" + str(record_id)
+        redirect(candidateUrl)
+    queryParams = " projectassignment.person_id = person.id AND projectassignment.project_id = project.id AND projectassignment.person_id = '" + str(record_id) + "' "
+    queryFields = "role, assigned_on, projectassignment.id, description, project_status, person.last_name, person.first_name "
+    response["projectassignments"] = accounts.ProjectAssignment().fetchProjectAssignmentWithDetails(db, queryFields=queryFields, queryParams=queryParams)   
+    response["mypayrolls"] = payroll.PayrollDetail().fetchPayrollDetailsByPerson(db, str(record_id))   
+    queryParams = " itresource.resource_assignedto = person.id AND itresource.resource_assignedto = '" + str(record_id) + "' "
+    response["itresources"] = infrastructure.ITResource().fetchITResourcesWithDetails(db, queryParams=queryParams)   
+
     return render_template("profile.html", response=response)       
         
 @app.route("/accounts",  defaults={'table': None, 'action' : "read", 'key': None }, methods=['GET'])
@@ -172,15 +208,23 @@ def manageAccounts(table, action, key):
                 response["messages"] = accounts.Account().createAccountForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/accounts/records?msg=" + response["messages"]) 
+            elif table == "projectassignments":
+                response["messages"] = accounts.ProjectAssignment().createProjectAssignmentForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/projectassignments?msg=" + response["messages"]) 
         elif action == "edit":
             if table == "projects": 
-                response["messages"] = accounts.Project().editProjectForm()(db, formData)
+                response["messages"] = accounts.Project().editProjectForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/accounts/projects?msg=" + response["messages"]) 
             elif table == "details":
                 response["messages"] = accounts.Account().editAccountForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/accounts/records?msg=" + response["messages"]) 
+            elif table == "projectassignments":
+                response["messages"] = accounts.ProjectAssignment().editProjectAssignment(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/accounts/projectassignments?msg=" + response["messages"]) 
 
     if key != None:        
         if action == "read":            
@@ -200,6 +244,14 @@ def manageAccounts(table, action, key):
                         formData['acc_name'] = row.acc_name
                         formData['acc_type'] = row.acc_type
                         formData['acc_status'] = row.acc_status
+            elif table == "projectassignments": 
+                result =  accounts.ProjectAssignment().fetchProjectAssignmentById(db, list(key))
+                if result != None:
+                    for row in result:   
+                        formData['prjasgn_id'] = row.id
+                        formData['role'] = row.role
+                        formData['person_id'] = row.person_id
+                        formData['project_id'] = row.project_id
         elif action == "delete":
             if table == "projects": 
                 result =  accounts.Project().deleteProject(db, list(key))
@@ -217,8 +269,9 @@ def manageAccounts(table, action, key):
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
           
     response["formData"] = formData
-    response["accounts"] = accounts.Account().fetchAccounts(db)    
-    response["projects"] = accounts.Project().fetchProjects(db)    
+    response["accounts"] = accounts.Account().fetchAccountWithProjectCount(db)    
+    response["projects"] = accounts.Project().fetchProjectWithUserCount(db)     
+    response["projectassignments"] = accounts.ProjectAssignment().fetchProjectAssignmentWithDetails(db)    
     return render_template("accounts.html", response=response)   
              
 @app.route("/dailystatus", methods=["GET", "POST"])
@@ -235,15 +288,21 @@ def dailystatus():
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
 
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
     if request.method == 'POST':
         formData = dict(request.form)
         formData["employee_id"] = session['userSession']['id']
-        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
-        response["messages"] = new_status
+        response["messages"] = services.DailyStatus().createDailyStatusForm(db, formData)    
+        if "ERROR" not in response["messages"]:
+            return redirect("/dailystatus?msg=" + response["messages"])
     else:        
         formData = {}
         formData["status_date"] = date.today()
         response["formData"] = formData
+        
+    response["formData"] = formData
     response["statuses"] = services.DailyStatus().fetchDailyStatusByUsername(db, session['userSession']['id'])    
     return render_template("dailystatus.html", response=response)       
 
@@ -261,17 +320,26 @@ def vacation():
     response["hasSidebar"] = True
     response["userSession"] = session['userSession']
 
+    if request.args.get('msg') != None:
+        response["messages"] = request.args.get('msg')
+
     if request.method == 'POST':
         formData = dict(request.form)
+        response["formData"] = formData
+        response["messages"] = utils.validateFormData(formData)
+        if "ERROR" in response["messages"]:
+            return render_template("vacation.html", response=response)
         formData["employee_id"] =  session['userSession']['id']
-        new_status = services.DailyStatus().createDailyStatusForm(db, formData)    
-        response["messages"] = new_status
+        response["messages"] = services.Vacation().createVacationForm(db, formData)    
+        if "ERROR" not in response["messages"]:
+            return redirect("/vacation?msg=" + response["messages"])
     else:        
         formData = {}
         formData["vac_startdate"] = date.today()
         formData["vac_enddate"] = date.today() + timedelta(days=1)
         response["formData"] = formData
-    response["leaveHistory"] = services.DailyStatus().fetchDailyStatusByUsername(db,  session['userSession']['id'])    
+
+    response["leaveHistory"] = services.Vacation().fetchVacationByUserId(db,  session['userSession']['id'])    
     return render_template("vacation.html", response=response)              
 
 @app.route("/settings", defaults={'table' : 'main', 'action': None}, methods=['GET'])
@@ -589,6 +657,11 @@ def managePayroll(table, action, key):
                 response["messages"] = payroll.Payroll().createPayrollForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/payroll/details?msg=" + response["messages"]) 
+            elif table == "bonus":
+                formData["prdetail_type"] = "BONUS"
+                response["messages"] = payroll.PayrollDetail().createPayrollDetailForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/bonus?msg=" + response["messages"]) 
         elif action == "edit":
             formData = dict(request.form)
             if table == "tiers": 
@@ -599,12 +672,25 @@ def managePayroll(table, action, key):
                 response["messages"] = payroll.Payroll().editPayrollForm(db, formData)
                 if "ERROR" not in response["messages"]:
                     return redirect("/payroll/details?msg=" + response["messages"]) 
+            elif table == "bonus":
+                response["messages"] = payroll.PayrollDetail().editPayrollDetailForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/payroll/bonus?msg=" + response["messages"]) 
 
     if key != None:        
         if action == "read":            
-            pass
+            if table == "details":
+                response["formData"] = formData
+                queryParams = " payroll.id = '" + str(key) + "' "
+                response["payrolls"] = payroll.Payroll().fetchPayrollsWithDetailCount(db, queryParams=queryParams)    
+                response["payrollDetails"] = payroll.PayrollDetail().fetchPayrollDetailsByPayroll(db, key)   
+                response["tiers"] = payroll.Tier().fetchTiers(db)      
+                response["bonuses"] = payroll.PayrollDetail().fetchBonusPayrollDetails(db)    
+                return render_template("payroll.html", response=response)                      
         elif action == "generate" and table == "details":
-            result = payroll.Payroll().generatePayrollDetails(db, list(key))
+            response["messages"] = payroll.Payroll().generatePayrollDetails(db, key)
+            if "ERROR" not in response["messages"]:
+                return redirect("/payroll/details?msg=" + response["messages"]) 
         elif action == "edit":
             if table == "tiers": 
                 result = payroll.Tier().fetchByTierId(db, list(key))
@@ -620,6 +706,12 @@ def managePayroll(table, action, key):
                     for row in result:   
                         formData['proll_period'] = row.proll_year + "-" + row.proll_month
                         formData['proll_status'] = row.proll_status
+            elif table == "bonus": 
+                result = payroll.PayrollDetail().fetchPayrollDetailsById(db, key)
+                if result != None:
+                    for row in result:   
+                        formData['prdetail_amount'] = row.prdetail_amount
+                        formData['prdetail_status'] = row.prdetail_status
         elif action == "delete":
             formData = dict(request.form)
             if table == "tiers": 
@@ -638,8 +730,9 @@ def managePayroll(table, action, key):
         response["messages"] = "ERROR_ID_NOT_SPECIFIED"     
           
     response["formData"] = formData
-    response["payrolls"] = payroll.Payroll().fetchPayrolls(db)    
-    response["tiers"] = payroll.Tier().fetchTiers(db)    
+    response["payrolls"] = payroll.Payroll().fetchPayrollsWithDetailCount(db)    
+    response["tiers"] = payroll.Tier().fetchTiers(db)  
+    response["bonuses"] = payroll.PayrollDetail().fetchBonusPayrollDetails(db)      
     return render_template("payroll.html", response=response)       
 
 @app.route("/people",  defaults={'table': None, 'action' : None, 'key': None }, methods=['GET'])
@@ -677,16 +770,22 @@ def managePeople(table, action, key):
                 return render_template("people.html", response=response)
             if table == "employees": 
                 response["messages"] = users.Employee().createEmployeeForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/people/employees?msg=" + response["messages"])      
             elif table == "contractors":
                 formData["ext_type"] = "CONTRACTOR"
                 consultant_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CONTRACTOR'", queryLimit="1"))
                 formData["profile_id"] = consultant_profile[0].id
                 response["messages"]  = users.External().createExternalForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/people/employees?msg=" + response["messages"])      
             elif table == "consultants":
                 formData["ext_type"] = "CONSULTANT"
                 consultant_profile = list(access.Profile().fetchProfiles(db, queryParams=" profile_name = 'CONSULTANT'", queryLimit="1"))
                 formData["profile_id"] = consultant_profile[0].id
                 response["messages"] = users.External().createExternalForm(db, formData)
+                if "ERROR" not in response["messages"]:
+                    return redirect("/people/employees?msg=" + response["messages"])      
             del formData["password"]
         elif action == "edit": 
             if table == "employees":
@@ -701,13 +800,23 @@ def managePeople(table, action, key):
             pass
         elif action == "edit":
             if table == "employees": 
-                result = users.Person().fetchByUserId(db, key)
+                result = users.Employee().fetchEmployeeById(db, key)
                 if result != None:
                     for row in result:                
                         formData["first_name"] = row.first_name
                         formData["last_name"] = row.last_name
                         formData["email"] = row.email       
-                        formData["username"] = row.username        
+                        formData["username"] = row.username       
+                        formData["date_of_birth"] = row.user_dob       
+                        formData["phone_number"] = row.phone_number    
+                        formData["profile_id"] = row["profile_id"]    
+                        formData["manager_id"] = row.manager_id    
+                        formData["tier_id"] = row.tier_id    
+                        formData["addr_line"] = row.addr_line     
+                        formData["addr_city"] = row.addr_city     
+                        formData["addr_state"] = row.addr_state     
+                        formData["addr_country"] = row.addr_country     
+                        formData["addr_zip"] = row.addr_zip     
         elif action == "delete":
             formData = dict(request.form)
             result = access.Profile().deleteProfiles(db, list(key))
@@ -826,11 +935,24 @@ def fetchData(table, limit):
             "id": row.id , 
             "field_name" : row.acc_name    
         } for row in results]
+    elif table == "projects":
+        results = accounts.Project().fetchProjects(db,queryParams="project_status = 'ACTIVE'")
+        response = [{
+            "id": row.id , 
+            "field_name" : row.description    
+        } for row in results]
+    elif table == "myprojects":
+        queryParams=" projectassignment.person_id = person.id AND projectassignment.project_id = project.id AND project.project_status = 'ACTIVE' AND projectassignment.person_id = '" + str(session['userSession']['id']) + "' "
+        results = accounts.ProjectAssignment().fetchProjectAssignmentWithDetails(db, queryParams=queryParams)
+        response = [{
+            "id": row.id , 
+            "field_name" : row.description    
+        } for row in results]
     elif table == "managers":
         results = users.Employee().fetchManagers(db)
         response = [{
             "id": row.id , 
-            "field_name" : row.last_name    
+            "field_name" : row.last_name + ( ", " + row.first_name  if row.first_name != "" else "" )
         } for row in results]
     elif table == "views":
         results = utils.fetchSidebarLinks(db, session['userSession']["username"])    

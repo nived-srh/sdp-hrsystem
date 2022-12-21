@@ -12,6 +12,10 @@
             <a class="nav-link" href="#projects" id="manageProjects"
                 onclick="toggleTab(event, 'Projects');">Projects</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#projectassignments" id="manageProjectAssignments"
+                onclick="toggleTab(event, 'ProjectAssignments');fetchData('persons','#prjasgn_person_id');fetchData('projects','#prjasgn_project_id');">Project Assignments</a>
+        </li>
     </ul>
     {% if "messages" in response %}
     {% if "ERROR" in response["messages"] %}
@@ -169,7 +173,7 @@
         <div class="d-flex flex-column bd-highlight">
             <div class="pt-2 bd-highlight">
                 <a href="#" id="addProjectsButton"
-                    onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');"
+                    onclick="toggleForm('ProjectsForm');fetchData('accounts','#project_account_id');fetchData('managers','#project_manager_id');"
                     style="float:right;"><button class="btn btn-outline-primary btn-sm" type="button">Add
                         Projects</button></a>
             </div>
@@ -194,6 +198,22 @@
                                         <input type="text" class="form-control" id="description" name="description"
                                             value="{{response['formData']['description']}}">
                                     </div>
+                                    <div class="col-xs-2 flex-grow-1 ml-4">
+                                        <label for="project_manager_id">Manager</label>
+                                        <select class="form-control" id="project_manager_id" name="project_manager_id">
+                                        </select>
+                                    </div>
+                                    <div class="col-xs-4  ml-4">
+                                        <label for="project_status">Status</label>
+                                        <select class="form-control" id="project_status" name="project_status"
+                                            value="{{response['formData']['project_status']}}">
+                                            <option>ACTIVE</option>
+                                            <option>PENDING CONTRACT</option>
+                                            <option>CONTRACT EXPIRED</option>
+                                            <option>ON HOLD</option>
+                                            <option>CLOSED</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <input type="hidden" id="project_id" name="project_id" value="{{response['key']}}" />
                             </div>
@@ -217,6 +237,9 @@
                     <th scope="col" colspan="2" style="width:10%">Action</th>
                     <th scope="col">Account</th>
                     <th scope="col">Description</th>
+                    <th scope="col">Manager</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Assigned Users</th>
                 </tr>
             </thead>
             <tbody>
@@ -228,9 +251,17 @@
                     <td class="text-center"><a href="/accounts/projects/delete/{{item.id}}"><i
                                 class="fa-solid fa-trash fa-flip-horizontal"></i></a>
                     </td>
+                    <td>{{item.acc_name}}</td>
                     <td>{{item.description}}</td>
-                    <td>{{item.description}}</td>
-                    <td>{{item.account_id}}</td>
+                    <td>
+                        {% if item.last_name != None %}
+                        {{item.last_name}}{{ "," if item.first_name != "" else "" }} {{item.first_name}}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>{{item.project_status}}</td>
+                    <td>{{item.count}}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -243,6 +274,54 @@
         </p>
         {% endif %}
         {% endif %}
+    </div>
+
+    <div id="ProjectAssignments" class="tabcontent">
+        <div class="d-flex flex-column bd-highlight">
+            {% include 'projectassignment.html' %}
+
+            {% if "projectassignments" in response and response["projectassignments"] != None %}
+            {% if response["projectassignments"].rowcount > 0 %}
+            <table class="table table-sm table-hover table-bordered shadow-sm text-center mt-2">
+                <thead>
+                    <tr class="text-center" style="background-color:#D6EAF8">
+                        <th scope="col" colspan="2" style="width:10%">Action</th>
+                        <th scope="col">Project Description</th>
+                        <th scope="col">Project Status</th>
+                        <th scope="col">Assign To</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Assigned On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in response["projectassignments"] %}
+                    <tr>
+                        <td class="text-center"><a href="/accounts/projectassignments/edit/{{item.id}}"><i
+                                    class="fa-solid fa-edit fa-flip-horizontal "></i></a>
+                        </td>
+                        <td class="text-center"><a href="/accounts/projectassignments/delete/{{item.id}}"><i
+                                    class="fa-solid fa-trash fa-flip-horizontal"></i></a>
+                        </td>
+                        <td>{{item.description}}</td>
+                        <td>{{item.project_status}}</td>
+                        <td>
+                            {% if item.last_name != None %}
+                            {{item.last_name}}{{ "," if item.first_name != "" else "" }} {{item.first_name}}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{item.role}}</td>
+                        <td>{{item.assigned_on}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-center text-muted">No Project Assignments found.</p>
+            {% endif %}
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock content %}

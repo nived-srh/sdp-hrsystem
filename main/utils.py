@@ -3,7 +3,6 @@ from .config import AppConfig
 from datetime import date, timedelta, datetime
 import re
 
-
 def fetchSidebarLinks(db, username):    
     viewData = {}
     if username != None:

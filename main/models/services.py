@@ -1,6 +1,7 @@
 from . import base
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date
 from sqlalchemy.orm import relationship
+from datetime import datetime, date
 
 class DailyStatus(base.Model):
     __tablename__ = 'dailystatus'
@@ -61,6 +62,10 @@ class Vacation(base.Model):
             self.vac_type = formData["vac_type"]
             self.vac_comment = formData["vac_comment"]
             self.employee_id = formData["employee_id"]
+            self.vac_status = "APPLIED"
+            self.vac_startdate = datetime.strptime(formData["vac_startdate"], '%Y-%m-%d').date()
+            self.vac_enddate = datetime.strptime(formData["vac_enddate"], '%Y-%m-%d').date()
+            self.vac_numdays = int((self.vac_enddate - self.vac_startdate).days)
 
     def createVacationForm(self, db, formData):
         self.__init__(formData)
@@ -80,7 +85,7 @@ class Vacation(base.Model):
                 return "ERROR : DUPLICATE KEY" 
             return "ERROR_INS_VACATION" 
 
-    def fetchVacationByUsername(self, db, userId):
+    def fetchVacationByUserId(self, db, userId):
         queryParams = " employee_id = '" + str(userId) + "' ORDER BY id DESC"
         return db.fetchData('vacation', None, queryParams, None)
 

@@ -5,7 +5,7 @@ from .access import Profile, ProfileAccess, View
 from .jobs import JobListing, JobApplication
 from .accounts import Account, Project, ProjectAssignment
 from .services import DailyStatus, Vacation
-from .payroll import Tier, Payroll, PayrollDetails
+from .payroll import Tier, Payroll, PayrollDetail
 from .users import Person, Employee, External, Candidate
 
 def createDB(db):

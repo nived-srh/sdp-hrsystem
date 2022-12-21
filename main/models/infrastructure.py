@@ -47,7 +47,7 @@ class ITResource(base.Model):
         recordToEdit.resource_name = formData["resource_name"]
         recordToEdit.resource_descr = formData["resource_descr"] if "resource_descr" in formData else recordToEdit.resource_descr
         recordToEdit.resource_status = str(formData["resource_status"] if "resource_status"  in formData else recordToEdit.resource_status).upper()
-        recordToEdit.resource_type = formData["resource_status"] if "resource_status"  in formData else recordToEdit.resource_type   
+        recordToEdit.resource_type = formData["resource_type"] if "resource_type"  in formData else recordToEdit.resource_type   
         recordToEdit.resource_serialnumber = formData["resource_serialnumber"] if "resource_serialnumber" in formData else recordToEdit.resource_serialnumber     
         recordToEdit.resource_assignedto = formData["resource_person_id"] if "resource_person_id" in formData else recordToEdit.resource_assignedto
         recordToEdit.resource_externalid = str(recordToEdit.resource_serialnumber) + "_" + str(recordToEdit.resource_status)

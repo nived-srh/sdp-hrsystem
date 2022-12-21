@@ -101,3 +101,7 @@ label{
 th, .card-header{
     font-weight: bold;
 }
+
+tr{
+    background-color:#FFFFFF
+}

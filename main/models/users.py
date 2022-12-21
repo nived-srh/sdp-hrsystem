@@ -15,13 +15,17 @@ class Person(base.Model):
     last_name = Column(String, nullable=False, index=True)
     first_name = Column(String, index=True)
     salutation = Column(String)
+    phone_number = Column(String)
     addr_line = Column(String)
     addr_city = Column(String)
     addr_state = Column(String)
     addr_country = Column(String)
     addr_zip = Column(String)
     profile_id = Column(Integer, ForeignKey("profile.id"))
+    tier_id = Column(Integer, ForeignKey("tier.id"))
     profile = relationship("Profile", back_populates="persons")
+    tier = relationship("Tier", back_populates="persons")
+    person_payrolls = relationship("PayrollDetail", back_populates="person")
     managedprojects = relationship("Project", back_populates="manager")
     __mapper_args__ = {'polymorphic_identity': 'person', 'polymorphic_on': user_type}
 
@@ -40,11 +44,9 @@ class Person(base.Model):
             self.addr_state = formData["addr_state"] if "addr_state" in formData else ""
             self.addr_country = formData["addr_country"] if "addr_country" in formData else ""
             self.addr_zip = formData["addr_zip"] if "addr_zip" in formData else ""
-
-            if "profile_id" in formData:
-                self.profile_id = formData["profile_id"]
-            elif "profile" in formData:
-                self.profile = formData["profile"]
+            self.phone_number = formData["phone_number"] if "phone_number" in formData else ""
+            self.tier_id = formData["tier_id"] if "tier_id" in formData else None
+            self.profile_id = formData["profile_id"] if "profile_id" in formData else None
 
     def validatePerson(self, db, username, password):
         try:
@@ -69,7 +71,7 @@ class Person(base.Model):
             elif isinstance(userIds, list):
                 params = 'person.id IN (' + ','.join([ '\'' + usr + '\'' for usr in userIds]) + ')' 
             params += ' AND person.profile_id = profile.id' 
-            return db.fetchData('person, profile', 'person.id, email, username, first_name, last_name, profile.profile_name', params, None) 
+            return db.fetchData('person, profile', 'person.id, email, username, salutation, first_name, last_name, profile.id AS profile_id, profile.profile_name, user_dob, addr_line, addr_city, addr_state, addr_country, addr_zip, phone_number ', params, None) 
         return "ERROR_MISSING_USERIDS"
 
     def fetchByUsername(self, db, usernames = []):
@@ -125,8 +127,6 @@ class Employee(Person):
     manager_id = Column(None, ForeignKey('person.id'))
     employee_id = Column(Integer, Sequence("employee_id_seq", start=1000), primary_key=True)
     num_vacations = Column(Integer)
-    tier_id = Column(Integer, ForeignKey("tier.id"))
-    tier = relationship("Tier", back_populates="persons")
     __mapper_args__ = dict(polymorphic_identity = 'employee', inherit_condition = (person_id == Person.id))
 
     def __init__(self):
@@ -135,7 +135,6 @@ class Employee(Person):
     def createEmployeeForm(self, db, formData):   
         self.user_type = "employee"
         self.num_vacations = 30
-        self.tier_id = formData["tier_id"] if "tier_id" in formData else None
         super(Employee, self).__init__(formData)     
         existingRecords = self.fetchByUsername(db, self.username)
         if existingRecords == None or existingRecords.rowcount == 0:
@@ -158,17 +157,20 @@ class Employee(Person):
     def editEmployeeForm(self, db, formData):
         session = db.initiateSession()
         recordToEdit = session.query(Employee).filter(Person.id==formData["person_id"]).first()
-        recordToEdit.email = formData["email"]  
-        recordToEdit.username = formData["email"]
-        recordToEdit.first_name = formData["first_name"]  
-        recordToEdit.last_name = formData["last_name"]
-        recordToEdit.salutation = formData["salutation"]  
+        recordToEdit.email = formData["email"] if "email" in formData else recordToEdit.email  
+        recordToEdit.username = formData["username"] if "username" in formData else recordToEdit.username
+        recordToEdit.first_name = formData["first_name"] if "first_name" in formData else recordToEdit.first_name  
+        recordToEdit.last_name = formData["last_name"] if "last_name" in formData else recordToEdit.last_name
+        recordToEdit.salutation = formData["salutation"] if "salutation" in formData else recordToEdit.salutation  
+        recordToEdit.manager_id = formData["manager_id"] if "manager_id" in formData else recordToEdit.manager_id
+        recordToEdit.profile_id = formData["profile_id"] if "profile_id" in formData else recordToEdit.profile_id
         recordToEdit.tier_id = formData["tier_id"] if "tier_id" in formData else recordToEdit.tier_id
         recordToEdit.addr_line = formData["addr_line"] if "addr_line" in formData else recordToEdit.addr_line
         recordToEdit.addr_city = formData["addr_city"] if "addr_city" in formData else recordToEdit.addr_city
         recordToEdit.addr_state = formData["addr_state"] if "addr_state" in formData else recordToEdit.addr_state
         recordToEdit.addr_country = formData["addr_country"] if "addr_country" in formData else recordToEdit.addr_country
         recordToEdit.addr_zip = formData["addr_zip"] if "addr_zip" in formData else recordToEdit.addr_zip
+        recordToEdit.user_status = formData["user_status"] if "user_status" in formData else recordToEdit.user_status
         commitStatus = db.commitSession(session)
         return commitStatus
 
@@ -177,9 +179,17 @@ class Employee(Person):
         return db.fetchData('employee, person, profile', "person.first_name, person.last_name, person.id", queryParams, queryLimit)        
 
     def fetchEmployeesWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        for row in db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        :
-            print(str(row))
         return db.fetchData('employee, person, profile', queryFields, queryParams, queryLimit)        
+    
+    def fetchEmployeeById(self, db, userIds = []):
+        if userIds != [] and userIds != None:
+            if isinstance(userIds, str):   
+                params = 'person.id = \'' + userIds + '\'' 
+            elif isinstance(userIds, list):
+                params = 'person.id IN (' + ','.join([ '\'' + usr + '\'' for usr in userIds]) + ')' 
+            params += ' AND employee.person_id = person.id AND person.profile_id = profile.id' 
+            return db.fetchData('employee, person, profile', 'person.id, email, username, salutation, person.first_name, last_name, profile.id AS profile_id, manager_id, tier_id, profile.profile_name, user_dob, addr_line, addr_city, addr_state, addr_country, addr_zip, phone_number ', params, None) 
+        return "ERROR_MISSING_USERIDS"
 
 class External(Person):
     __mapper_args__ = {'polymorphic_identity': 'external'}

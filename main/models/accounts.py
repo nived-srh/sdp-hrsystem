@@ -1,7 +1,7 @@
 from . import base
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date
 from sqlalchemy.orm import relationship
-# {% if "Accounts" in response and response["Accounts"] != None %}
+from datetime import date
 
 class Account(base.Model):
     __tablename__ = 'account'
@@ -61,7 +61,7 @@ class Account(base.Model):
         return commitStatus
 
     def deleteAccount(self, db, recordIds):
-        queryParams = "id IN (" + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ") AND account_default != true"
+        queryParams = "id IN (" + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ") "
         return db.deleteData('account', queryParams)
 
     def fetchByAccountId(self, db, recordIds = []):
@@ -75,7 +75,7 @@ class Account(base.Model):
         return "ERROR : MISSING_AccountIDS"
 
     def fetchAccountWithProjectCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        return db.fetchData('account', "id, acc_name, acc_type, acc_status, addr_line, addr_city, addr_state, addr_country, addr_zip, (SELECT COUNT(id) FROM project WHERE project.account_id = account.id) AS count" , queryParams, queryLimit)
+        return db.fetchData('account', "id, acc_name, acc_type, acc_status, addr_line, addr_city, addr_state, addr_country, addr_zip, (SELECT COUNT(id) FROM project) AS count" , queryParams, queryLimit)
 
     def fetchAccounts(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('account', queryFields, queryParams, queryLimit)
@@ -119,7 +119,7 @@ class Project(base.Model):
         session = db.initiateSession()
         recordToEdit = session.query(Project).filter(Project.id==formData["project_id"]).first()
         recordToEdit.project_id = formData["project_id"] if "project_id" in formData else recordToEdit.project_id
-        recordToEdit.project_description = formData["project_description"] if "project_description" in formData else recordToEdit.project_description
+        recordToEdit.project_description = formData["description"] if "description" in formData else recordToEdit.project_description
         recordToEdit.account_id = formData["project_account_id"] if "project_account_id" in formData else recordToEdit.account_id
         recordToEdit.manager_id = formData["project_manager_id"] if "project_manager_id" in formData else recordToEdit.manager_id
         recordToEdit.project_status = formData["project_status"] if "project_status" in formData else recordToEdit.project_status
@@ -127,7 +127,7 @@ class Project(base.Model):
         return commitStatus
 
     def deleteProject(self, db, recordIds):
-        queryParams = "id IN (" + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ") AND project_default != true"
+        queryParams = "id IN (" + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ") "
         return db.deleteData('project', queryParams)
 
     def fetchByProjectId(self, db, recordIds = []):
@@ -137,13 +137,11 @@ class Project(base.Model):
                 params = 'id = \'' + recordIds + '\'' 
             elif isinstance(recordIds, list):
                 params = 'id IN (' + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ')' 
-            return db.fetchData('Project', None, params, None) 
-        return "ERROR : MISSING_ProjectIDS"
+            return db.fetchData('project', None, params, None) 
+        return "ERROR : MISSING_PROJECTIDS"
 
     def fetchProjectWithUserCount(self, db, queryFields = None, queryParams = None, queryLimit = None):
-        if queryParams == None:
-            queryParams = " account.id = project.account_id "
-        return db.fetchData('account, project, person', "id, project_name, project_descr, project_active, project_default, project_payscale, (SELECT COUNT(id) FROM person WHERE person.account_id = project.id)" , queryParams, queryLimit)
+        return db.fetchData('project LEFT JOIN person ON person.id = project.manager_id INNER JOIN account ON account.id = project.account_id ', "project.id, acc_name, description, person.last_name, project_status, person.first_name, (SELECT COUNT(id) FROM projectassignment)" , queryParams, queryLimit)
 
     def fetchProjects(self, db, queryFields = None, queryParams = None, queryLimit = None):
         return db.fetchData('project', queryFields, queryParams, queryLimit)
@@ -151,7 +149,67 @@ class Project(base.Model):
 class ProjectAssignment(base.Model):
     __tablename__ = 'projectassignment'
     id = Column(Integer, primary_key=True)
-    role = Column(String, nullable=False, index=True)
-    account_id = Column(Integer, ForeignKey("project.id"))
-    person_id = Column(Integer, ForeignKey("person.id"))
+    role = Column(String, index=True)
+    assigned_on = Column(Date)
+    project_id = Column(Integer, ForeignKey("project.id"), nullable=False)
+    person_id = Column(Integer, ForeignKey("person.id"), nullable=False)
     project = relationship("Project", back_populates="children")
+
+    def __init__(self, formData = None):
+        if formData != None:
+            self.role = formData["role"] if "role" in formData else "MEMBER"
+            self.person_id = formData["prjasgn_person_id"] if "prjasgn_person_id" in formData else None
+            self.project_id = formData["prjasgn_project_id"] if "prjasgn_project_id" in formData else None
+            self.assigned_on = date.today()
+
+    def createProjectAssignmentForm(self, db, formData):
+        if "prjasgn_person_id" in formData and "prjasgn_project_id" in formData:
+            self.__init__(formData)
+            return self.createProjectAssignment(db)
+        return "ERROR : PROJECT AND PERSON ARE REQUIRED FIELDS"
+
+    def createProjectAssignment(self, db):
+        try:
+            session = db.initiateSession()
+            session.add(self)
+            commitStatus = db.commitSession(session)
+            if commitStatus == "SUCCESS":
+                return "INSERTED_PROJECTASSIGNMENT"
+            else:
+                return "ERROR : " + commitStatus
+        except Exception as err:
+            if "duplicate key" in str(err):
+                return "ERROR : DUPLICATE KEY" 
+            return "ERROR : INS_PROJECTASSIGNMENT"
+
+    def editProjectAssignment(self, db, formData):
+        session = db.initiateSession()
+        recordToEdit = session.query(ProjectAssignment).filter(ProjectAssignment.id==formData["prjasgn_id"]).first()
+        recordToEdit.role = formData["role"] if "role" in formData else recordToEdit.role
+        recordToEdit.project_id = formData["prjasgn_project_id"] if "prjasgn_project_id" in formData else recordToEdit.project_id
+        recordToEdit.person_id = formData["prjasgn_person_id"] if "prjasgn_person_id" in formData else recordToEdit.person_id
+        commitStatus = db.commitSession(session)
+        return commitStatus
+
+    def deleteProjectAssignment(self, db, recordIds):
+        queryParams = "id IN (" + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ") "
+        return db.deleteData('projectassignment', queryParams)
+
+    def fetchProjectAssignmentById(self, db, recordIds = []):
+        params = ""
+        if recordIds != [] and recordIds != None:
+            if isinstance(recordIds, str):   
+                params = 'id = \'' + recordIds + '\'' 
+            elif isinstance(recordIds, list):
+                params = 'id IN (' + ','.join([ '\'' + rcdId + '\'' for rcdId in recordIds]) + ')' 
+            return db.fetchData('projectassignment', None, params, None) 
+        return "ERROR : MISSING_PROJECTASSIGNMENT_IDS"
+
+    def fetchProjectAssignmentWithDetails(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        if queryParams == None:
+            queryParams = " projectassignment.person_id = person.id AND projectassignment.project_id = project.id"
+        return db.fetchData('projectassignment, person, project ', "role, assigned_on, projectassignment.id, description, project_status, person.last_name, person.first_name " , queryParams, queryLimit)
+
+    def fetchProjectAssignments(self, db, queryFields = None, queryParams = None, queryLimit = None):
+        return db.fetchData('project', queryFields, queryParams, queryLimit)
+    
