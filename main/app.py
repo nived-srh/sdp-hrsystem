@@ -132,7 +132,7 @@ def profile(table, action, key):
     if table == "employee":
         if action == "resign":
             formData = {}
-            formData["user_status"] = "INITIARED RESIGNATION"
+            formData["user_status"] = "INITIATED RESIGNATION"
             result = users.Employee().editEmployeeForm(db,formData)
         queryParams = "employee.person_id = person.id AND person.profile_id = profile.id AND person.id = '" + str(record_id) + "' "
         queryFields = "person.id, num_vacations, employee_id, email, username, salutation, person.first_name, last_name, profile.id AS profile_id, manager_id, tier_id, profile.profile_name, user_dob, addr_line, addr_city, addr_state, addr_country, addr_zip, phone_number"
